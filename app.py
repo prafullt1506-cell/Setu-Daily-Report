@@ -31,17 +31,22 @@ def connect_to_gsheet():
         # Secrets मधून JSON चावी घेणे
         creds_data = json.loads(st.secrets["google_credentials"])
         
-        # एरर फिक्स: जर फाईल चुकून 'List' फॉरमॅटमध्ये आली असेल, तर ती दुरुस्त करणे
+        # जर फाईल चुकून 'List' फॉरमॅटमध्ये आली असेल, तर ती दुरुस्त करणे
         if isinstance(creds_data, list):
             creds_data = creds_data[0]
             
         gc = gspread.service_account_from_dict(creds_data)
-        sh = gc.open("Smart_Setu_Database")
+        
+        # नावाऐवजी थेट लिंक (URL) वापरणे सर्वात सुरक्षित आहे!
+        # खालील कंसात तुमच्या खऱ्या गुगल शीटची संपूर्ण लिंक (URL) पेस्ट करा:
+        sheet_url = "https://docs.google.com/spreadsheets/d/1CV9oR3fEs1zEtAjvN2jZ_z3wONW2ghKJ4pzsne9MK_0/edit?gid=0#gid=0" 
+        
+        sh = gc.open_by_url(sheet_url)
         return sh
+        
     except Exception as e:
         st.error(f"⚠️ गुगल शीट कनेक्ट करताना एरर आला. Secrets तपासा. Error: {e}")
         st.stop()
-
 def init_db(sh):
     # Users शीट (PIN सेव्ह करण्यासाठी)
     try:
