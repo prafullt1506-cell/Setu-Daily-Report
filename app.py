@@ -28,17 +28,13 @@ st.markdown("""
 # ==========================================
 def connect_to_gsheet():
     try:
-        # Secrets मधून JSON चावी घेणे
         creds_data = json.loads(st.secrets["google_credentials"])
-        
-        # जर फाईल चुकून 'List' फॉरमॅटमध्ये आली असेल, तर ती दुरुस्त करणे
         if isinstance(creds_data, list):
             creds_data = creds_data[0]
             
         gc = gspread.service_account_from_dict(creds_data)
         
-        # नावाऐवजी थेट लिंक (URL) वापरणे सर्वात सुरक्षित आहे!
-        # खालील कंसात तुमच्या खऱ्या गुगल शीटची संपूर्ण लिंक (URL) पेस्ट करा:
+        # ⚠️ महत्त्वाची सूचना: खालील कंसात तुमच्या खऱ्या गुगल शीटची संपूर्ण लिंक (URL) पेस्ट करा
         sheet_url = "https://docs.google.com/spreadsheets/d/1CV9oR3fEs1zEtAjvN2jZ_z3wONW2ghKJ4pzsne9MK_0/edit?gid=0#gid=0" 
         
         sh = gc.open_by_url(sheet_url)
@@ -47,15 +43,9 @@ def connect_to_gsheet():
     except Exception as e:
         st.error(f"⚠️ गुगल शीट कनेक्ट करताना एरर आला. Secrets तपासा. Error: {e}")
         st.stop()
+
 def init_db(sh):
-    # Users शीट (PIN सेव्ह करण्यासाठी)
-    try:
-        users_ws = sh.worksheet("Users")
-    except gspread.WorksheetNotFound:
-        users_ws = sh.add_worksheet(title="Users", rows="100", cols="2")
-        users_ws.append_row(["Email", "PIN"])
-    
-    # Hishob शीट (रोजचा डेटा सेव्ह करण्यासाठी)
+    # आता फक्त Hishob शीटची गरज आहे (Users शीट काढली कारण PIN कोडमध्येच आहे)
     try:
         hishob_ws = sh.worksheet("Hishob")
     except gspread.WorksheetNotFound:
@@ -65,10 +55,10 @@ def init_db(sh):
                    "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल", "स्कॅन पेजेस", "इतर कमाई", "एकूण रक्कम"]
         hishob_ws.append_row(headers)
     
-    return users_ws, hishob_ws
+    return hishob_ws
 
 # ==========================================
-# ३. सिक्युरिटी सिस्टीम (Login Logic)
+# ३. सिक्युरिटी सिस्टीम (Hardcoded Login)
 # ==========================================
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
@@ -77,66 +67,30 @@ if "current_user" not in st.session_state:
 
 st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
 
-# --- लॉगिन स्क्रीन ---
+# 🔒 इथे अधिकृत ईमेल्स आणि त्यांचे PIN जोडून ठेवा! 
+# (नवीन ग्राहक आल्यास फक्त खाली कॉमा (,) देऊन त्याचा ईमेल आणि PIN ॲड करा)
+AUTHORIZED_USERS = {
+    "setuknkreport@gmail.com": "1122",
+    
+}
+
+# --- लॉगिन स्क्रीन (फक्त एकच पान) ---
 if not st.session_state["logged_in"]:
     st.markdown('<div class="sub-title">सुरक्षित लॉगिन (Secure Login)</div>', unsafe_allow_html=True)
     
-    sh = connect_to_gsheet()
-    users_ws, _ = init_db(sh)
-    users_data = users_ws.get_all_records()
-    df_users = pd.DataFrame(users_data)
-    
-    tab_login, tab_register, tab_forgot = st.tabs(["🔒 लॉगिन करा", "👤 नवीन खाते", "🔄 PIN विसरलात?"])
-    
-    # १. रोजचे लॉगिन
-    with tab_login:
-        login_email = st.text_input("तुमचा ईमेल आयडी (Email):", key="log_email")
-        login_pin = st.text_input("४-अंकी PIN टाका:", type="password", key="log_pin")
+    # बॉक्स बनवून डिझाईन स्वच्छ केली आहे
+    with st.container():
+        login_email = st.text_input("तुमचा ईमेल आयडी (Email):")
+        login_pin = st.text_input("४-अंकी PIN टाका:", type="password")
         
         if st.button("लॉगिन करा (Login)", type="primary", use_container_width=True):
-            if not df_users.empty and login_email in df_users["Email"].values:
-                correct_pin = str(df_users[df_users["Email"] == login_email]["PIN"].values[0])
-                if login_pin == correct_pin:
-                    st.session_state["logged_in"] = True
-                    st.session_state["current_user"] = login_email
-                    st.rerun()
-                else:
-                    st.error("❌ चुकीचा PIN! कृपया पुन्हा प्रयत्न करा.")
+            # ईमेल डिक्शनरीमध्ये आहे का आणि PIN मॅच होतोय का हे चेक करणे
+            if login_email in AUTHORIZED_USERS and AUTHORIZED_USERS[login_email] == login_pin:
+                st.session_state["logged_in"] = True
+                st.session_state["current_user"] = login_email
+                st.rerun()
             else:
-                st.warning("⚠️ हा ईमेल नोंदणीकृत नाही. कृपया 'नवीन खाते' मध्ये जाऊन नोंदणी करा.")
-
-    # २. पहिल्यांदा नोंदणी
-    with tab_register:
-        reg_email = st.text_input("तुमचा अधिकृत ईमेल टाका:", key="reg_email")
-        reg_pin = st.text_input("नवीन ४-अंकी PIN तयार करा:", type="password", key="reg_pin")
-        
-        if st.button("नवीन खाते उघडा", use_container_width=True):
-            if reg_email == "" or reg_pin == "":
-                st.error("कृपया सर्व माहिती भरा.")
-            elif not df_users.empty and reg_email in df_users["Email"].values:
-                st.error("❌ हा ईमेल आधीपासूनच रजिस्टर आहे. कृपया लॉगिन करा.")
-            else:
-                users_ws.append_row([reg_email, reg_pin])
-                st.success("✅ तुमचे खाते यशस्वीरित्या बनले! आता तुम्ही लॉगिन करू शकता.")
-                st.balloons()
-                
-    # ३. PIN विसरलात (Reset)
-    with tab_forgot:
-        st.info("💡 सुरक्षेसाठी, PIN बदलण्यासाठी तुमच्या 'मास्टर ॲडमिन' ची परवानगी (Master Key) लागते.")
-        f_email = st.text_input("तुमचा रजिस्टर ईमेल:", key="f_email")
-        new_pin = st.text_input("नवीन ४-अंकी PIN:", type="password", key="new_pin")
-        master_key = st.text_input("ॲडमिन मास्टर की (Secret Key):", type="password", key="master_key")
-        
-        if st.button("PIN बदला", use_container_width=True):
-            if master_key == "9999":
-                if not df_users.empty and f_email in df_users["Email"].values:
-                    cell = users_ws.find(f_email)
-                    users_ws.update_cell(cell.row, 2, new_pin) 
-                    st.success("✅ तुमचा PIN यशस्वीरित्या बदलला आहे! आता नवीन PIN ने लॉगिन करा.")
-                else:
-                    st.error("हा ईमेल सापडला नाही.")
-            else:
-                st.error("❌ चुकीची मास्टर की! प्रवेश नाकारला.")
+                st.error("❌ चुकीचा ईमेल किंवा PIN! प्रवेश नाकारला.")
 
 # ==========================================
 # ४. मुख्य हिशोब ॲप (लॉगिन झाल्यानंतर)
@@ -152,7 +106,7 @@ if st.session_state["logged_in"]:
     tab1, tab2 = st.tabs(["📝 आजचा हिशोब भरा", "📊 अहवाल आणि रिपोर्ट"])
     
     sh = connect_to_gsheet()
-    _, hishob_ws = init_db(sh)
+    hishob_ws = init_db(sh)
 
     # --- टॅब १: हिशोब भरणे ---
     with tab1:
