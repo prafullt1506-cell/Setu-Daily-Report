@@ -34,7 +34,7 @@ def connect_to_gsheet():
             
         gc = gspread.service_account_from_dict(creds_data)
         
-        # ⚠️ महत्त्वाची सूचना: खालील कंसात तुमच्या खऱ्या गुगल शीटची संपूर्ण लिंक (URL) पेस्ट करा
+        # ⚠️ तुमची गुगल शीटची लिंक
         sheet_url = "https://docs.google.com/spreadsheets/d/1CV9oR3fEs1zEtAjvN2jZ_z3wONW2ghKJ4pzsne9MK_0/edit?gid=0#gid=0" 
         
         sh = gc.open_by_url(sheet_url)
@@ -45,7 +45,6 @@ def connect_to_gsheet():
         st.stop()
 
 def init_db(sh):
-    # आता फक्त Hishob शीटची गरज आहे (Users शीट काढली कारण PIN कोडमध्येच आहे)
     try:
         hishob_ws = sh.worksheet("Hishob")
     except gspread.WorksheetNotFound:
@@ -58,7 +57,7 @@ def init_db(sh):
     return hishob_ws
 
 # ==========================================
-# ३. सिक्युरिटी सिस्टीम (Hardcoded Login)
+# ३. सिक्युरिटी सिस्टीम (Username & Password Login)
 # ==========================================
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
@@ -67,30 +66,29 @@ if "current_user" not in st.session_state:
 
 st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
 
-# 🔒 इथे अधिकृत ईमेल्स आणि त्यांचे PIN जोडून ठेवा! 
-# (नवीन ग्राहक आल्यास फक्त खाली कॉमा (,) देऊन त्याचा ईमेल आणि PIN ॲड करा)
+# 🔒 इथे तुम्ही ग्राहकांचे Username (ID) आणि त्यांचे Password (PIN) सेट करून ठेवू शकता!
 AUTHORIZED_USERS = {
-    "setuknkreport@gmail.com": "1122",
+    "setuknk": "1122",
     
 }
 
-# --- लॉगिन स्क्रीन (फक्त एकच पान) ---
+# --- लॉगिन स्क्रीन ---
 if not st.session_state["logged_in"]:
     st.markdown('<div class="sub-title">सुरक्षित लॉगिन (Secure Login)</div>', unsafe_allow_html=True)
     
-    # बॉक्स बनवून डिझाईन स्वच्छ केली आहे
     with st.container():
-        login_email = st.text_input("तुमचा ईमेल आयडी (Email):")
-        login_pin = st.text_input("४-अंकी PIN टाका:", type="password")
+        # आता ईमेल ऐवजी युझरनेम (Username) विचारेल
+        login_username = st.text_input("तुमचा युझरनेम किंवा ID टाका:")
+        login_password = st.text_input("तुमचा पासवर्ड किंवा PIN टाका:", type="password")
         
         if st.button("लॉगिन करा (Login)", type="primary", use_container_width=True):
-            # ईमेल डिक्शनरीमध्ये आहे का आणि PIN मॅच होतोय का हे चेक करणे
-            if login_email in AUTHORIZED_USERS and AUTHORIZED_USERS[login_email] == login_pin:
+            # Username डिक्शनरीमध्ये आहे का आणि Password मॅच होतोय का हे चेक करणे
+            if login_username in AUTHORIZED_USERS and AUTHORIZED_USERS[login_username] == login_password:
                 st.session_state["logged_in"] = True
-                st.session_state["current_user"] = login_email
+                st.session_state["current_user"] = login_username
                 st.rerun()
             else:
-                st.error("❌ चुकीचा ईमेल किंवा PIN! प्रवेश नाकारला.")
+                st.error("❌ चुकीचा युझरनेम किंवा पासवर्ड! प्रवेश नाकारला.")
 
 # ==========================================
 # ४. मुख्य हिशोब ॲप (लॉगिन झाल्यानंतर)
