@@ -1,185 +1,264 @@
 import streamlit as st
-import datetime
 import pandas as pd
-import io # हे एक्सेल फाईल बनवण्यासाठी लागेल
+import datetime
+import io
+import json
+import gspread
 
-# १. ॲपची सेटिंग
+# ==========================================
+# १. ॲपची सेटिंग आणि डिझाईन
+# ==========================================
 st.set_page_config(page_title="स्मार्ट सेतू हिशोब", page_icon="🏛️", layout="centered")
 
-# २. प्रीमियम डिझाईन आणि CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Poppins:wght@400;600;800&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Mukta', 'Poppins', sans-serif;
-    }
-    
-    .stApp {
-        background: linear-gradient(180deg, var(--background-color) 0%, rgba(59, 130, 246, 0.05) 100%);
-    }
-    
+    html, body, [class*="css"] { font-family: 'Mukta', 'Poppins', sans-serif; }
+    .stApp { background: linear-gradient(180deg, var(--background-color) 0%, rgba(59, 130, 246, 0.05) 100%); }
     .main-title { font-size: 38px; font-weight: 800; text-align: center; margin-bottom: 5px; color: var(--text-color); }
     .sub-title { text-align: center; font-size: 16px; color: #6B7280; margin-bottom: 25px; font-weight: 600;}
-    
-    .grand-total-card { 
-        background: linear-gradient(135deg, #10B981, #047857); 
-        color: white; padding: 25px; border-radius: 15px; 
-        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3); 
-        text-align: center; margin-top: 10px; margin-bottom: 20px;
-    }
-    .grand-total-text { font-size: 45px; font-weight: 800; margin: 0; line-height: 1.1; font-family: 'Poppins', sans-serif;}
+    .grand-total-card { background: linear-gradient(135deg, #10B981, #047857); color: white; padding: 25px; border-radius: 15px; text-align: center; margin-top: 10px; margin-bottom: 20px;}
+    .grand-total-text { font-size: 45px; font-weight: 800; margin: 0; line-height: 1.1;}
     .grand-total-label { font-size: 18px; opacity: 0.9; margin-bottom: 5px; font-weight: 600; }
-    
-    .stTabs [data-baseweb="tab"] { font-size: 16px; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
-# मुख्य टायटल
+# ==========================================
+# २. गुगल शीट कनेक्शन (Database Setup)
+# ==========================================
+# गुगल शीटशी कनेक्ट होणारे फंक्शन
+def connect_to_gsheet():
+    try:
+        # Secrets मधून JSON चावी घेणे
+        creds_dict = json.loads(st.secrets["google_credentials"])
+        gc = gspread.service_account_from_dict(creds_dict)
+        sh = gc.open("Smart_Setu_Database")
+        return sh
+    except Exception as e:
+        st.error(f"⚠️ गुगल शीट कनेक्ट करताना एरर आला. Secrets तपासा. Error: {e}")
+        st.stop()
+
+# नवीन शीट (Tab) बनवणारे फंक्शन
+def init_db(sh):
+    # Users शीट (PIN सेव्ह करण्यासाठी)
+    try:
+        users_ws = sh.worksheet("Users")
+    except gspread.WorksheetNotFound:
+        users_ws = sh.add_worksheet(title="Users", rows="100", cols="2")
+        users_ws.append_row(["Email", "PIN"])
+    
+    # Hishob शीट (रोजचा डेटा सेव्ह करण्यासाठी)
+    try:
+        hishob_ws = sh.worksheet("Hishob")
+    except gspread.WorksheetNotFound:
+        hishob_ws = sh.add_worksheet(title="Hishob", rows="1000", cols="20")
+        headers = ["तारीख", "युजर", "उत्पन्नाचा", "वय/अधिवास", "अल्पभूधारक", "जातीचा", "EWS", 
+                   "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
+                   "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल", "स्कॅन पेजेस", "इतर कमाई", "एकूण रक्कम"]
+        hishob_ws.append_row(headers)
+    
+    return users_ws, hishob_ws
+
+# ==========================================
+# ३. सिक्युरिटी सिस्टीम (Login Logic)
+# ==========================================
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+if "current_user" not in st.session_state:
+    st.session_state["current_user"] = ""
+
 st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">मोबाईल फ्रेंडली डॅशबोर्ड</div>', unsafe_allow_html=True)
 
-# दोन मुख्य टॅब्स
-tab1, tab2 = st.tabs(["📝 आजचा हिशोब भरा", "📊 अहवाल आणि रिपोर्ट"])
-
-# =========================================================================
-# टॅब १: आजचा हिशोब भरा 
-# =========================================================================
-with tab1:
-    st.caption("माहिती भरण्यासाठी खालील फोल्डर्सवर क्लिक करा 🔽")
+# --- लॉगिन स्क्रीन ---
+if not st.session_state["logged_in"]:
+    st.markdown('<div class="sub-title">सुरक्षित लॉगिन (Secure Login)</div>', unsafe_allow_html=True)
     
-    with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹८०)", expanded=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            v1 = st.number_input("उत्पन्नाचा दाखला", min_value=0, step=1)
-            v2 = st.number_input("वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1)
-            v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1)
-            v4 = st.number_input("जातीचा दाखला", min_value=0, step=1)
-            v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1)
-            v6 = st.number_input("वारसा दाखला", min_value=0, step=1)
-        with c2:
-            v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1)
-            v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1)
-            v9 = st.number_input("डोंगरी दाखला", min_value=0, step=1)
-            v10 = st.number_input("रहिवासी दाखला", min_value=0, step=1)
-            v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1)
-            v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1)
-        
-        mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 80
-
-    with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
-        affidavit_rs = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1) * 80
-
-    with st.expander("📁 ३. रेशन कार्ड कामे [दर: ₹६९]"):
-        ration_rs = (st.number_input("नाव कमी करणे", min_value=0, step=1) + st.number_input("नाव दाखल करणे", min_value=0, step=1)) * 69
-
-    with st.expander("📁 ४. स्कॅनिंग [दर: ₹२ / पेज]"):
-        scan_rs = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1) * 2
-
-    with st.expander("📁 ५. इतर किरकोळ कमाई"):
-        itar = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1)
-
-    grand_total = mahsul_rs + affidavit_rs + ration_rs + scan_rs + itar
-
-    st.markdown(f'''
-    <div class="grand-total-card">
-        <div class="grand-total-label">💰 आजची एकूण कमाई</div>
-        <div class="grand-total-text">₹ {grand_total}</div>
-    </div>
-    ''', unsafe_allow_html=True)
-
-    if st.button("💾 आजचा हिशोब सेव्ह करा", use_container_width=True, type="primary"):
-        st.balloons()
-        st.success("✅ रेकॉर्ड यशस्वीरित्या सेव्ह झाला!")
-
-# =========================================================================
-# टॅब २: अहवाल आणि विश्लेषण 
-# =========================================================================
-with tab2:
-    st.markdown("### 🔍 अहवाल फिल्टर करा")
+    sh = connect_to_gsheet()
+    users_ws, _ = init_db(sh)
+    users_data = users_ws.get_all_records()
+    df_users = pd.DataFrame(users_data)
     
-    period = st.radio("१. कालावधी निवडा:", ["एका दिवसाचा", "दोन तारखांमधील", "संपूर्ण महिन्याचा"], horizontal=True)
+    tab_login, tab_register, tab_forgot = st.tabs(["🔒 लॉगिन करा", "👤 नवीन खाते", "🔄 PIN विसरलात?"])
     
-    if period == "एका दिवसाचा":
-        st.date_input("तारीख निवडा:", datetime.date.today())
-    elif period == "दोन तारखांमधील":
-        st.date_input("सुरुवातीची आणि शेवटची तारीख निवडा:", [])
-    elif period == "संपूर्ण महिन्याचा":
-        col_m, col_y = st.columns(2)
-        col_m.selectbox("महिना निवडा:", ["जानेवारी", "फेब्रुवारी", "मार्च", "एप्रिल", "मे", "जून", "जुलै", "ऑगस्ट", "सप्टेंबर", "ऑक्टोबर", "नोव्हेंबर", "डिसेंबर"])
-        col_y.selectbox("वर्ष निवडा:", [2026, 2027, 2028])
+    # १. रोजचे लॉगिन
+    with tab_login:
+        login_email = st.text_input("तुमचा ईमेल आयडी (Email):", key="log_email")
+        login_pin = st.text_input("४-अंकी PIN टाका:", type="password", key="log_pin")
+        
+        if st.button("लॉगिन करा (Login)", type="primary", use_container_width=True):
+            if not df_users.empty and login_email in df_users["Email"].values:
+                correct_pin = str(df_users[df_users["Email"] == login_email]["PIN"].values[0])
+                if login_pin == correct_pin:
+                    st.session_state["logged_in"] = True
+                    st.session_state["current_user"] = login_email
+                    st.rerun()
+                else:
+                    st.error("❌ चुकीचा PIN! कृपया पुन्हा प्रयत्न करा.")
+            else:
+                st.warning("⚠️ हा ईमेल नोंदणीकृत नाही. कृपया 'नवीन खाते' मध्ये जाऊन नोंदणी करा.")
 
-    st.write("---")
+    # २. पहिल्यांदा नोंदणी
+    with tab_register:
+        reg_email = st.text_input("तुमचा अधिकृत ईमेल टाका:", key="reg_email")
+        reg_pin = st.text_input("नवीन ४-अंकी PIN तयार करा:", type="password", key="reg_pin")
+        
+        if st.button("नवीन खाते उघडा", use_container_width=True):
+            if reg_email == "" or reg_pin == "":
+                st.error("कृपया सर्व माहिती भरा.")
+            elif not df_users.empty and reg_email in df_users["Email"].values:
+                st.error("❌ हा ईमेल आधीपासूनच रजिस्टर आहे. कृपया लॉगिन करा.")
+            else:
+                users_ws.append_row([reg_email, reg_pin])
+                st.success("✅ तुमचे खाते यशस्वीरित्या बनले! आता तुम्ही लॉगिन करू शकता.")
+                st.balloons()
+                
+    # ३. PIN विसरलात (Reset)
+    with tab_forgot:
+        st.info("💡 सुरक्षेसाठी, PIN बदलण्यासाठी तुमच्या 'मास्टर ॲडमिन' ची परवानगी (Master Key) लागते.")
+        f_email = st.text_input("तुमचा रजिस्टर ईमेल:", key="f_email")
+        new_pin = st.text_input("नवीन ४-अंकी PIN:", type="password", key="new_pin")
+        master_key = st.text_input("ॲडमिन मास्टर की (Secret Key):", type="password", key="master_key")
+        
+        if st.button("PIN बदला", use_container_width=True):
+            # इथे 9999 ही मास्टर की ठेवली आहे (तुम्ही बदलू शकता)
+            if master_key == "9999":
+                if not df_users.empty and f_email in df_users["Email"].values:
+                    # अपडेट करण्यासाठी Row शोधणे
+                    cell = users_ws.find(f_email)
+                    users_ws.update_cell(cell.row, 2, new_pin) # 2nd column is PIN
+                    st.success("✅ तुमचा PIN यशस्वीरित्या बदलला आहे! आता नवीन PIN ने लॉगिन करा.")
+                else:
+                    st.error("हा ईमेल सापडला नाही.")
+            else:
+                st.error("❌ चुकीची मास्टर की! प्रवेश नाकारला.")
 
-    report_type = st.radio("२. रिपोर्ट प्रकार:", ["फक्त दाखल्यांची संख्या", "संपूर्ण हिशोब (रक्कमेसहित)"], horizontal=True)
-    st.write("")
+# ==========================================
+# ४. मुख्य हिशोब ॲप (लॉगिन झाल्यानंतर)
+# ==========================================
+if st.session_state["logged_in"]:
+    st.markdown(f'<div class="sub-title">स्वागत आहे! ({st.session_state["current_user"]})</div>', unsafe_allow_html=True)
     
-    # लॉजिक: फक्त दाखले निवडले तर स्कॅनिंग आणि इतर कमाई दिसणार नाही
-    if report_type == "फक्त दाखल्यांची संख्या":
-        demo_data = pd.DataFrame({
-            "कामाचा प्रकार": ["उत्पन्नाचा दाखला", "जातीचा दाखला", "रेशन कार्ड", "प्रतिज्ञापत्र"], 
-            "एकूण संख्या": [25, 15, 8, 10]
-        })
-    else:
-        demo_data = pd.DataFrame({
-            "कामाचा प्रकार": ["उत्पन्नाचा दाखला", "जातीचा दाखला", "रेशन कार्ड", "प्रतिज्ञापत्र", "स्कॅनिंग (पेजेस)", "इतर कमाई"], 
-            "एकूण संख्या / पेजेस": [25, 15, 8, 10, 120, "-"], 
-            "एकूण रक्कम (₹)": [2000, 1200, 552, 800, 240, 500]
-        })
+    if st.button("🚪 लॉग आउट करा (Logout)"):
+        st.session_state["logged_in"] = False
+        st.session_state["current_user"] = ""
+        st.rerun()
 
-    # -------------------------------------------------------------------------
-    # A4 Print Ready Excel फाईल बनवण्याची प्रोसेस (xlsxwriter)
-    # -------------------------------------------------------------------------
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        demo_data.to_excel(writer, index=False, sheet_name='Report')
-        
-        workbook  = writer.book
-        worksheet = writer.sheets['Report']
-        
-        # १. पेज A4 सेट करणे आणि मध्यभागी घेणे
-        worksheet.set_paper(9) # 9 म्हणजे A4 साईझ
-        worksheet.center_horizontally()
-        
-        # २. फॉन्ट आणि बॉर्डर डिझाईन (Header)
-        header_format = workbook.add_format({
-            'bold': True, 'font_size': 14, 'font_name': 'Arial',
-            'bg_color': '#D3D3D3', 'border': 1,
-            'align': 'center', 'valign': 'vcenter'
-        })
-        
-        # ३. सामान्य डेटाचे डिझाईन (Cell Data)
-        cell_format = workbook.add_format({
-            'font_size': 12, 'font_name': 'Arial',
-            'border': 1, 'align': 'center', 'valign': 'vcenter'
-        })
-        
-        # कॉलम रुंदी (Width) वाढवणे जेणेकरून मजकूर लपणार नाही
-        worksheet.set_column('A:A', 30, cell_format) # 'कामाचा प्रकार' कॉलम मोठा केला
-        worksheet.set_column('B:C', 20, cell_format) # इतर कॉलम सेट केले
-        
-        # हेडरला फॉरमॅट लावणे
-        for col_num, value in enumerate(demo_data.columns.values):
-            worksheet.write(0, col_num, value, header_format)
-
-    excel_data = output.getvalue()
-    # -------------------------------------------------------------------------
-
-    col_view, col_down = st.columns(2)
+    tab1, tab2 = st.tabs(["📝 आजचा हिशोब भरा", "📊 अहवाल आणि रिपोर्ट"])
     
-    with col_view:
-        if st.button("👁️ रिपोर्ट पहा", type="primary", use_container_width=True):
-            st.dataframe(demo_data, use_container_width=True) 
+    sh = connect_to_gsheet()
+    _, hishob_ws = init_db(sh)
+
+    # --- टॅब १: हिशोब भरणे ---
+    with tab1:
+        date_today = st.date_input("तारीख निवडा:", datetime.date.today())
+        
+        with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹८०)", expanded=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                v1 = st.number_input("उत्पन्नाचा दाखला", min_value=0, step=1)
+                v2 = st.number_input("वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1)
+                v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1)
+                v4 = st.number_input("जातीचा दाखला", min_value=0, step=1)
+                v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1)
+                v6 = st.number_input("वारसा दाखला", min_value=0, step=1)
+            with c2:
+                v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1)
+                v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1)
+                v9 = st.number_input("डोंगरी दाखला", min_value=0, step=1)
+                v10 = st.number_input("रहिवासी दाखला", min_value=0, step=1)
+                v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1)
+                v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1)
             
-            if report_type == "संपूर्ण हिशोब (रक्कमेसहित)":
-                st.info("💰 **या कालावधीतील एकूण कमाई: ₹ ५२९२**")
+            mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 80
 
-    with col_down:
-        # आता थेट .xlsx फाईल डाउनलोड होईल
-        st.download_button(
-            label="📥 Excel (.xlsx) डाउनलोड",
-            data=excel_data,
-            file_name="Setu_Report.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
+        with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
+            v13 = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1)
+            affidavit_rs = v13 * 80
+
+        with st.expander("📁 ३. रेशन कार्ड कामे [दर: ₹६९]"):
+            v14 = st.number_input("नाव कमी करणे", min_value=0, step=1)
+            v15 = st.number_input("नाव दाखल करणे", min_value=0, step=1)
+            ration_rs = (v14 + v15) * 69
+
+        with st.expander("📁 ४. स्कॅनिंग [दर: ₹२ / पेज]"):
+            v16 = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1)
+            scan_rs = v16 * 2
+
+        with st.expander("📁 ५. इतर किरकोळ कमाई"):
+            v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1)
+
+        grand_total = mahsul_rs + affidavit_rs + ration_rs + scan_rs + v17
+
+        st.markdown(f'''
+        <div class="grand-total-card">
+            <div class="grand-total-label">💰 आजची एकूण कमाई</div>
+            <div class="grand-total-text">₹ {grand_total}</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        if st.button("💾 हिशोब गुगल शीटमध्ये सेव्ह करा", use_container_width=True, type="primary"):
+            row_data = [
+                str(date_today), st.session_state["current_user"], 
+                v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, 
+                v13, v14, v15, v16, v17, grand_total
+            ]
+            hishob_ws.append_row(row_data)
+            st.balloons()
+            st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
+
+    # --- टॅब २: रिपोर्टिंग आणि एक्सेल डाउनलोड ---
+    with tab2:
+        st.markdown("### 🔍 अहवाल फिल्टर करा")
+        
+        all_data = hishob_ws.get_all_records()
+        df = pd.DataFrame(all_data)
+        
+        if not df.empty:
+            df['तारीख'] = pd.to_datetime(df['तारीख'])
+            
+            period = st.radio("१. कालावधी निवडा:", ["सर्व डेटा", "विशिष्ट तारीख"], horizontal=True)
+            if period == "विशिष्ट तारीख":
+                sel_date = st.date_input("तारीख निवडा:")
+                df = df[df['तारीख'].dt.date == sel_date]
+            
+            # तारीख परत टेक्स्ट फॉरमॅटमध्ये करणे
+            df['तारीख'] = df['तारीख'].dt.strftime('%Y-%m-%d')
+            
+            report_type = st.radio("२. रिपोर्ट प्रकार:", ["फक्त दाखल्यांची संख्या", "संपूर्ण हिशोब (रक्कमेसहित)"], horizontal=True)
+            
+            if report_type == "फक्त दाखल्यांची संख्या":
+                cols_to_drop = ["स्कॅन पेजेस", "इतर कमाई", "एकूण रक्कम", "युजर"]
+                df_report = df.drop(columns=[col for col in cols_to_drop if col in df.columns])
+            else:
+                df_report = df.copy()
+
+            total_kamai = df['एकूण रक्कम'].sum() if 'एकूण रक्कम' in df.columns else 0
+
+            # A4 Print Ready Excel फाईल बनवणे
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df_report.to_excel(writer, index=False, sheet_name='Report')
+                workbook = writer.book
+                worksheet = writer.sheets['Report']
+                worksheet.set_paper(9) # A4 
+                worksheet.center_horizontally()
+                
+                header_format = workbook.add_format({'bold': True, 'font_size': 12, 'font_name': 'Arial', 'bg_color': '#D3D3D3', 'border': 1, 'align': 'center'})
+                cell_format = workbook.add_format({'font_size': 11, 'font_name': 'Arial', 'border': 1, 'align': 'center'})
+                
+                worksheet.set_column('A:Z', 15, cell_format)
+                for col_num, value in enumerate(df_report.columns.values):
+                    worksheet.write(0, col_num, value, header_format)
+
+            excel_data = output.getvalue()
+
+            col_v, col_d = st.columns(2)
+            with col_v:
+                if st.button("👁️ रिपोर्ट पहा", type="primary", use_container_width=True):
+                    st.dataframe(df_report, use_container_width=True)
+                    if report_type == "संपूर्ण हिशोब (रक्कमेसहित)":
+                        st.info(f"💰 **या कालावधीतील एकूण कमाई: ₹ {total_kamai}**")
+            with col_d:
+                st.download_button(label="📥 Excel (.xlsx) डाउनलोड", data=excel_data, file_name="Smart_Setu_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        else:
+            st.warning("कोणताही डेटा उपलब्ध नाही. आधी हिशोब भरा!")
