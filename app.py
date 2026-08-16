@@ -165,7 +165,7 @@ if st.session_state["logged_in"]:
             st.balloons()
             st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
 
-    # --- टॅब २: रिपोर्टिंग आणि ॲडव्हान्स फिल्टर ---
+  # --- टॅब २: रिपोर्टिंग आणि ॲडव्हान्स फिल्टर ---
     with tab2:
         st.markdown('<div class="sub-title" style="margin-bottom:10px;">🔍 ॲडव्हान्स अहवाल (Advanced Reports)</div>', unsafe_allow_html=True)
         
@@ -175,12 +175,11 @@ if st.session_state["logged_in"]:
         if not df.empty:
             df['तारीख'] = pd.to_datetime(df['तारीख'])
             
-            # --- १. ॲडव्हान्स फिल्टरिंग ---
+            # १. ॲडव्हान्स फिल्टरिंग
             filter_type = st.selectbox("📅 रिपोर्टचा कालावधी निवडा:", 
                                        ["सर्व डेटा", "विशिष्ट तारीख", "दोन तारखांच्या दरम्यान", "विशिष्ट महिना", "विशिष्ट वर्ष"])
             
             filtered_df = df.copy()
-            
             col_f1, col_f2 = st.columns(2)
             
             if filter_type == "विशिष्ट तारीख":
@@ -205,26 +204,46 @@ if st.session_state["logged_in"]:
                 sel_year = st.selectbox("वर्ष निवडा:", range(2024, 2030))
                 filtered_df = df[df['तारीख'].dt.year == sel_year]
 
-            # --- २. रिपोर्ट कॅल्क्युलेशन (फक्त ज्यांची संख्या > ० आहे तेच घेणे) ---
+            # [नवीन बदल] २. रिपोर्टचा प्रकार निवडणे
+            report_type = st.radio("📊 रिपोर्टचा प्रकार:", ["संपूर्ण हिशोब (रक्कमेसहित)", "फक्त दाखल्यांची संख्या"], horizontal=True)
+
+            # ३. रिपोर्ट कॅल्क्युलेशन
             if not filtered_df.empty:
                 total_kamai = filtered_df['एकूण रक्कम'].sum() if 'एकूण रक्कम' in filtered_df.columns else 0
                 
-                # कॉलमची बेरीज करणे
-                cols_to_sum = ["उत्पन्नाचा", "वय/अधिवास", "अल्पभूधारक", "जातीचा", "EWS", 
-                               "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
-                               "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल", "स्कॅन पेजेस", "इतर कमाई"]
+                # जर 'फक्त दाखल्यांची संख्या' निवडले असेल
+                if report_type == "फक्त दाखल्यांची संख्या":
+                    cols_to_sum = ["उत्पन्नाचा", "वय/अधिवास", "अल्पभूधारक", "जातीचा", "EWS", 
+                                   "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
+                                   "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल"]
+                    
+                    # Excel मधून पैशांचे कॉलम्स काढणे
+                    cols_to_drop = ["स्कॅन पेजेस", "इतर कमाई", "एकूण रक्कम", "युजर"]
+                    df_for_excel = filtered_df.drop(columns=[col for col in cols_to_drop if col in filtered_df.columns])
+                    
+                    header_title = "📋 रिपोर्ट (फक्त दाखल्यांची संख्या)"
+                    summary_html = "" 
+                
+                # जर 'संपूर्ण हिशोब' निवडले असेल
+                else:
+                    cols_to_sum = ["उत्पन्नाचा", "वय/अधिवास", "अल्पभूधारक", "जातीचा", "EWS", 
+                                   "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
+                                   "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल", "स्कॅन पेजेस", "इतर कमाई"]
+                    df_for_excel = filtered_df.copy()
+                    header_title = f"📋 रिपोर्ट (एकूण कमाई: ₹ {total_kamai})"
+                    summary_html = f'<div class="summary">एकूण कमाई: ₹ {total_kamai}</div>'
                 
                 report_data = {}
                 for col in cols_to_sum:
                     if col in filtered_df.columns:
                         total_val = filtered_df[col].sum()
-                        if total_val > 0: # फक्त जे ० पेक्षा जास्त आहेत तेच दाखवा
+                        if total_val > 0: 
                             report_data[col] = total_val
                 
                 st.markdown("---")
                 
-                # --- ३. मोबाईलसाठी उभा आणि ठळक (Vertical) रिपोर्ट लूक ---
-                st.markdown(f"### 📋 रिपोर्ट (एकूण कमाई: ₹ {total_kamai})")
+                # ४. उभा आणि ठळक (Vertical) रिपोर्ट लूक (कच्च्या कोडचा एरर फिक्स केलाय)
+                st.markdown(f"### {header_title}")
                 
                 if report_data:
                     html_report = '<div style="background-color:#F3F4F6; padding:15px; border-radius:10px;">'
@@ -238,27 +257,27 @@ if st.session_state["logged_in"]:
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
-                # --- ४. डाऊनलोड आणि प्रिंट (PDF) पर्याय ---
+                # ५. डाऊनलोड आणि प्रिंट (PDF) पर्याय
                 col_d1, col_d2 = st.columns(2)
                 
                 with col_d1:
-                    # Excel डाऊनलोड (पूर्ण डेटा)
-                    filtered_df['तारीख'] = filtered_df['तारीख'].dt.strftime('%d-%m-%Y')
+                    # Excel
+                    df_for_excel['तारीख'] = df_for_excel['तारीख'].dt.strftime('%d-%m-%Y')
                     output = io.BytesIO()
                     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                        filtered_df.to_excel(writer, index=False, sheet_name='Report')
+                        df_for_excel.to_excel(writer, index=False, sheet_name='Report')
                         workbook = writer.book
                         worksheet = writer.sheets['Report']
                         worksheet.set_paper(9)
                         worksheet.center_horizontally()
                         header_format = workbook.add_format({'bold': True, 'bg_color': '#D3D3D3', 'border': 1})
-                        for col_num, value in enumerate(filtered_df.columns.values):
+                        for col_num, value in enumerate(df_for_excel.columns.values):
                             worksheet.write(0, col_num, value, header_format)
                     excel_data = output.getvalue()
                     st.download_button(label="📊 Excel डाउनलोड करा", data=excel_data, file_name="Smart_Setu_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                 
                 with col_d2:
-                    # PDF / Print साठी HTML बनवणे
+                    # PDF / Print 
                     print_html = f"""
                     <html>
                     <head>
@@ -274,7 +293,7 @@ if st.session_state["logged_in"]:
                     </head>
                     <body onload="window.print()">
                         <h2>🏛️ स्मार्ट सेतू अहवाल</h2>
-                        <div class="summary">एकूण कमाई: ₹ {total_kamai}</div>
+                        {summary_html}
                         <table>
                             <tr><th>दाखल्याचा प्रकार / काम</th><th>संख्या / रक्कम</th></tr>
                     """
