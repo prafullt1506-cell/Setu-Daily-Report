@@ -4,6 +4,7 @@ import datetime
 import io
 import json
 import gspread
+import base64
 
 # ==========================================
 # १. ॲपची सेटिंग आणि डिझाईन
@@ -293,7 +294,7 @@ if st.session_state["logged_in"]:
                         print_html += f"<tr><td>{item}</td><td><b>{val_str}</b></td></tr>"
                     print_html += "</table></body></html>"
                     
-                    b64 = import_base64(print_html) # Helper for link
+                   b64 = base64.b64encode(print_html.encode('utf-8')).decode('utf-8')
                     href = f'<a href="data:text/html;base64,{b64}" target="_blank" style="display: block; text-align: center; background-color: #EF4444; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-top: 2px;">🖨️ PDF / प्रिंट काढा</a>'
                     st.markdown(href, unsafe_allow_html=True)
 
@@ -301,8 +302,3 @@ if st.session_state["logged_in"]:
                 st.warning("या कालावधीसाठी कोणताही डेटा उपलब्ध नाही. 🤷‍♂️")
         else:
             st.warning("कोणताही डेटा उपलब्ध नाही. आधी हिशोब भरा!")
-
-# Helper function for base64
-def import_base64(html_str):
-    import base64
-    return base64.b64encode(html_str.encode('utf-8')).decode('utf-8')
