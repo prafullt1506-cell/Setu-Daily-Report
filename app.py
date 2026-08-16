@@ -26,19 +26,22 @@ st.markdown("""
 # ==========================================
 # २. गुगल शीट कनेक्शन (Database Setup)
 # ==========================================
-# गुगल शीटशी कनेक्ट होणारे फंक्शन
 def connect_to_gsheet():
     try:
         # Secrets मधून JSON चावी घेणे
-        creds_dict = json.loads(st.secrets["google_credentials"])
-        gc = gspread.service_account_from_dict(creds_dict)
+        creds_data = json.loads(st.secrets["google_credentials"])
+        
+        # एरर फिक्स: जर फाईल चुकून 'List' फॉरमॅटमध्ये आली असेल, तर ती दुरुस्त करणे
+        if isinstance(creds_data, list):
+            creds_data = creds_data[0]
+            
+        gc = gspread.service_account_from_dict(creds_data)
         sh = gc.open("Smart_Setu_Database")
         return sh
     except Exception as e:
         st.error(f"⚠️ गुगल शीट कनेक्ट करताना एरर आला. Secrets तपासा. Error: {e}")
         st.stop()
 
-# नवीन शीट (Tab) बनवणारे फंक्शन
 def init_db(sh):
     # Users शीट (PIN सेव्ह करण्यासाठी)
     try:
@@ -120,12 +123,10 @@ if not st.session_state["logged_in"]:
         master_key = st.text_input("ॲडमिन मास्टर की (Secret Key):", type="password", key="master_key")
         
         if st.button("PIN बदला", use_container_width=True):
-            # इथे 9999 ही मास्टर की ठेवली आहे (तुम्ही बदलू शकता)
             if master_key == "9999":
                 if not df_users.empty and f_email in df_users["Email"].values:
-                    # अपडेट करण्यासाठी Row शोधणे
                     cell = users_ws.find(f_email)
-                    users_ws.update_cell(cell.row, 2, new_pin) # 2nd column is PIN
+                    users_ws.update_cell(cell.row, 2, new_pin) 
                     st.success("✅ तुमचा PIN यशस्वीरित्या बदलला आहे! आता नवीन PIN ने लॉगिन करा.")
                 else:
                     st.error("हा ईमेल सापडला नाही.")
@@ -221,7 +222,6 @@ if st.session_state["logged_in"]:
                 sel_date = st.date_input("तारीख निवडा:")
                 df = df[df['तारीख'].dt.date == sel_date]
             
-            # तारीख परत टेक्स्ट फॉरमॅटमध्ये करणे
             df['तारीख'] = df['तारीख'].dt.strftime('%Y-%m-%d')
             
             report_type = st.radio("२. रिपोर्ट प्रकार:", ["फक्त दाखल्यांची संख्या", "संपूर्ण हिशोब (रक्कमेसहित)"], horizontal=True)
@@ -234,13 +234,12 @@ if st.session_state["logged_in"]:
 
             total_kamai = df['एकूण रक्कम'].sum() if 'एकूण रक्कम' in df.columns else 0
 
-            # A4 Print Ready Excel फाईल बनवणे
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 df_report.to_excel(writer, index=False, sheet_name='Report')
                 workbook = writer.book
                 worksheet = writer.sheets['Report']
-                worksheet.set_paper(9) # A4 
+                worksheet.set_paper(9)
                 worksheet.center_horizontally()
                 
                 header_format = workbook.add_format({'bold': True, 'font_size': 12, 'font_name': 'Arial', 'bg_color': '#D3D3D3', 'border': 1, 'align': 'center'})
