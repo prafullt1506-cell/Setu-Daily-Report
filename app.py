@@ -227,21 +227,10 @@ if st.session_state["logged_in"]:
                 st.markdown(f"### 📋 रिपोर्ट (एकूण कमाई: ₹ {total_kamai})")
                 
                 if report_data:
-                    # सुंदर आणि मोठ्या फाईजमध्ये लिस्ट
                     html_report = '<div style="background-color:#F3F4F6; padding:15px; border-radius:10px;">'
                     for item, count in report_data.items():
-                        # इतर कमाई असेल तर पुढे ₹ चिन्ह, नाहीतर फक्त संख्या
-                        if item == "इतर कमाई":
-                            val_str = f"₹ {count}"
-                        else:
-                            val_str = f"{count}"
-                            
-                        html_report += f'''
-                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #E5E7EB; padding: 10px 0;">
-                            <span style="font-size: 18px; font-weight: 600; color: #374151;">📄 {item}</span>
-                            <span style="font-size: 20px; font-weight: 800; color: #111827;">{val_str}</span>
-                        </div>
-                        '''
+                        val_str = f"₹ {count}" if item == "इतर कमाई" else f"{count}"
+                        html_report += f'<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #E5E7EB; padding: 10px 0;"><span style="font-size: 18px; font-weight: 600; color: #374151;">📄 {item}</span><span style="font-size: 20px; font-weight: 800; color: #111827;">{val_str}</span></div>'
                     html_report += '</div>'
                     st.markdown(html_report, unsafe_allow_html=True)
                 else:
