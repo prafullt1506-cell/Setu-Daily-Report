@@ -68,7 +68,7 @@ st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू 
 
 # 🔒 इथे तुम्ही ग्राहकांचे Username (ID) आणि त्यांचे Password (PIN) सेट करून ठेवू शकता!
 AUTHORIZED_USERS = {
-    "setuknk": "1122",
+    "setuknk": "2026",
     
 }
 
