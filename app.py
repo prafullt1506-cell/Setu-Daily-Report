@@ -294,7 +294,7 @@ if st.session_state["logged_in"]:
                         print_html += f"<tr><td>{item}</td><td><b>{val_str}</b></td></tr>"
                     print_html += "</table></body></html>"
                     
-                   b64 = base64.b64encode(print_html.encode('utf-8')).decode('utf-8')
+                    b64 = base64.b64encode(print_html.encode('utf-8')).decode('utf-8')
                     href = f'<a href="data:text/html;base64,{b64}" target="_blank" style="display: block; text-align: center; background-color: #EF4444; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-top: 2px;">🖨️ PDF / प्रिंट काढा</a>'
                     st.markdown(href, unsafe_allow_html=True)
 
