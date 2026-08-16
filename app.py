@@ -164,9 +164,9 @@ if st.session_state["logged_in"]:
             st.balloons()
             st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
 
-    # --- टॅब २: रिपोर्टिंग आणि एक्सेल डाउनलोड ---
+    # --- टॅब २: रिपोर्टिंग आणि ॲडव्हान्स फिल्टर ---
     with tab2:
-        st.markdown("### 🔍 अहवाल फिल्टर करा")
+        st.markdown('<div class="sub-title" style="margin-bottom:10px;">🔍 ॲडव्हान्स अहवाल (Advanced Reports)</div>', unsafe_allow_html=True)
         
         all_data = hishob_ws.get_all_records()
         df = pd.DataFrame(all_data)
@@ -174,47 +174,135 @@ if st.session_state["logged_in"]:
         if not df.empty:
             df['तारीख'] = pd.to_datetime(df['तारीख'])
             
-            period = st.radio("१. कालावधी निवडा:", ["सर्व डेटा", "विशिष्ट तारीख"], horizontal=True)
-            if period == "विशिष्ट तारीख":
+            # --- १. ॲडव्हान्स फिल्टरिंग ---
+            filter_type = st.selectbox("📅 रिपोर्टचा कालावधी निवडा:", 
+                                       ["सर्व डेटा", "विशिष्ट तारीख", "दोन तारखांच्या दरम्यान", "विशिष्ट महिना", "विशिष्ट वर्ष"])
+            
+            filtered_df = df.copy()
+            
+            col_f1, col_f2 = st.columns(2)
+            
+            if filter_type == "विशिष्ट तारीख":
                 sel_date = st.date_input("तारीख निवडा:")
-                df = df[df['तारीख'].dt.date == sel_date]
-            
-            df['तारीख'] = df['तारीख'].dt.strftime('%Y-%m-%d')
-            
-            report_type = st.radio("२. रिपोर्ट प्रकार:", ["फक्त दाखल्यांची संख्या", "संपूर्ण हिशोब (रक्कमेसहित)"], horizontal=True)
-            
-            if report_type == "फक्त दाखल्यांची संख्या":
-                cols_to_drop = ["स्कॅन पेजेस", "इतर कमाई", "एकूण रक्कम", "युजर"]
-                df_report = df.drop(columns=[col for col in cols_to_drop if col in df.columns])
+                filtered_df = df[df['तारीख'].dt.date == sel_date]
+                
+            elif filter_type == "दोन तारखांच्या दरम्यान":
+                with col_f1: start_date = st.date_input("सुरुवातीची तारीख:")
+                with col_f2: end_date = st.date_input("शेवटची तारीख:")
+                filtered_df = df[(df['तारीख'].dt.date >= start_date) & (df['तारीख'].dt.date <= end_date)]
+                
+            elif filter_type == "विशिष्ट महिना":
+                months = ["जानेवारी", "फेब्रुवारी", "मार्च", "एप्रिल", "मे", "जून", "जुलै", "ऑगस्ट", "सप्टेंबर", "ऑक्टोबर", "नोव्हेंबर", "डिसेंबर"]
+                with col_f1:
+                    sel_month_name = st.selectbox("महिना निवडा:", months)
+                    sel_month = months.index(sel_month_name) + 1
+                with col_f2:
+                    sel_year = st.selectbox("वर्ष निवडा:", range(2024, 2030))
+                filtered_df = df[(df['तारीख'].dt.month == sel_month) & (df['तारीख'].dt.year == sel_year)]
+                
+            elif filter_type == "विशिष्ट वर्ष":
+                sel_year = st.selectbox("वर्ष निवडा:", range(2024, 2030))
+                filtered_df = df[df['तारीख'].dt.year == sel_year]
+
+            # --- २. रिपोर्ट कॅल्क्युलेशन (फक्त ज्यांची संख्या > ० आहे तेच घेणे) ---
+            if not filtered_df.empty:
+                total_kamai = filtered_df['एकूण रक्कम'].sum() if 'एकूण रक्कम' in filtered_df.columns else 0
+                
+                # कॉलमची बेरीज करणे
+                cols_to_sum = ["उत्पन्नाचा", "वय/अधिवास", "अल्पभूधारक", "जातीचा", "EWS", 
+                               "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
+                               "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल", "स्कॅन पेजेस", "इतर कमाई"]
+                
+                report_data = {}
+                for col in cols_to_sum:
+                    if col in filtered_df.columns:
+                        total_val = filtered_df[col].sum()
+                        if total_val > 0: # फक्त जे ० पेक्षा जास्त आहेत तेच दाखवा
+                            report_data[col] = total_val
+                
+                st.markdown("---")
+                
+                # --- ३. मोबाईलसाठी उभा आणि ठळक (Vertical) रिपोर्ट लूक ---
+                st.markdown(f"### 📋 रिपोर्ट (एकूण कमाई: ₹ {total_kamai})")
+                
+                if report_data:
+                    # सुंदर आणि मोठ्या फाईजमध्ये लिस्ट
+                    html_report = '<div style="background-color:#F3F4F6; padding:15px; border-radius:10px;">'
+                    for item, count in report_data.items():
+                        # इतर कमाई असेल तर पुढे ₹ चिन्ह, नाहीतर फक्त संख्या
+                        if item == "इतर कमाई":
+                            val_str = f"₹ {count}"
+                        else:
+                            val_str = f"{count}"
+                            
+                        html_report += f'''
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #E5E7EB; padding: 10px 0;">
+                            <span style="font-size: 18px; font-weight: 600; color: #374151;">📄 {item}</span>
+                            <span style="font-size: 20px; font-weight: 800; color: #111827;">{val_str}</span>
+                        </div>
+                        '''
+                    html_report += '</div>'
+                    st.markdown(html_report, unsafe_allow_html=True)
+                else:
+                    st.info("या कालावधीत कोणतेही दाखले काढलेले नाहीत.")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # --- ४. डाऊनलोड आणि प्रिंट (PDF) पर्याय ---
+                col_d1, col_d2 = st.columns(2)
+                
+                with col_d1:
+                    # Excel डाऊनलोड (पूर्ण डेटा)
+                    filtered_df['तारीख'] = filtered_df['तारीख'].dt.strftime('%d-%m-%Y')
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                        filtered_df.to_excel(writer, index=False, sheet_name='Report')
+                        workbook = writer.book
+                        worksheet = writer.sheets['Report']
+                        worksheet.set_paper(9)
+                        worksheet.center_horizontally()
+                        header_format = workbook.add_format({'bold': True, 'bg_color': '#D3D3D3', 'border': 1})
+                        for col_num, value in enumerate(filtered_df.columns.values):
+                            worksheet.write(0, col_num, value, header_format)
+                    excel_data = output.getvalue()
+                    st.download_button(label="📊 Excel डाउनलोड करा", data=excel_data, file_name="Smart_Setu_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                
+                with col_d2:
+                    # PDF / Print साठी HTML बनवणे
+                    print_html = f"""
+                    <html>
+                    <head>
+                        <title>स्मार्ट सेतू हिशोब</title>
+                        <style>
+                            body {{ font-family: Arial, sans-serif; padding: 20px; }}
+                            h2 {{ text-align: center; color: #333; }}
+                            .summary {{ text-align: center; font-size: 18px; margin-bottom: 20px; font-weight: bold; padding: 10px; background: #e0f2fe; border-radius: 8px;}}
+                            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                            th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 16px;}}
+                            th {{ background-color: #f2f2f2; }}
+                        </style>
+                    </head>
+                    <body onload="window.print()">
+                        <h2>🏛️ स्मार्ट सेतू अहवाल</h2>
+                        <div class="summary">एकूण कमाई: ₹ {total_kamai}</div>
+                        <table>
+                            <tr><th>दाखल्याचा प्रकार / काम</th><th>संख्या / रक्कम</th></tr>
+                    """
+                    for item, count in report_data.items():
+                        val_str = f"₹ {count}" if item == "इतर कमाई" else count
+                        print_html += f"<tr><td>{item}</td><td><b>{val_str}</b></td></tr>"
+                    print_html += "</table></body></html>"
+                    
+                    b64 = import_base64(print_html) # Helper for link
+                    href = f'<a href="data:text/html;base64,{b64}" target="_blank" style="display: block; text-align: center; background-color: #EF4444; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-top: 2px;">🖨️ PDF / प्रिंट काढा</a>'
+                    st.markdown(href, unsafe_allow_html=True)
+
             else:
-                df_report = df.copy()
-
-            total_kamai = df['एकूण रक्कम'].sum() if 'एकूण रक्कम' in df.columns else 0
-
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df_report.to_excel(writer, index=False, sheet_name='Report')
-                workbook = writer.book
-                worksheet = writer.sheets['Report']
-                worksheet.set_paper(9)
-                worksheet.center_horizontally()
-                
-                header_format = workbook.add_format({'bold': True, 'font_size': 12, 'font_name': 'Arial', 'bg_color': '#D3D3D3', 'border': 1, 'align': 'center'})
-                cell_format = workbook.add_format({'font_size': 11, 'font_name': 'Arial', 'border': 1, 'align': 'center'})
-                
-                worksheet.set_column('A:Z', 15, cell_format)
-                for col_num, value in enumerate(df_report.columns.values):
-                    worksheet.write(0, col_num, value, header_format)
-
-            excel_data = output.getvalue()
-
-            col_v, col_d = st.columns(2)
-            with col_v:
-                if st.button("👁️ रिपोर्ट पहा", type="primary", use_container_width=True):
-                    st.dataframe(df_report, use_container_width=True)
-                    if report_type == "संपूर्ण हिशोब (रक्कमेसहित)":
-                        st.info(f"💰 **या कालावधीतील एकूण कमाई: ₹ {total_kamai}**")
-            with col_d:
-                st.download_button(label="📥 Excel (.xlsx) डाउनलोड", data=excel_data, file_name="Smart_Setu_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                st.warning("या कालावधीसाठी कोणताही डेटा उपलब्ध नाही. 🤷‍♂️")
         else:
             st.warning("कोणताही डेटा उपलब्ध नाही. आधी हिशोब भरा!")
+
+# Helper function for base64
+def import_base64(html_str):
+    import base64
+    return base64.b64encode(html_str.encode('utf-8')).decode('utf-8')
