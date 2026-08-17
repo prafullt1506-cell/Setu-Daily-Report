@@ -118,43 +118,71 @@ if st.session_state["logged_in"]:
         "स्कॅन पेजेस": 2
     }
 
+    # --- टॅब १: हिशोब भरणे आणि एडिट करणे ---
     with tab1:
         date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
+        date_str = str(date_today)
         
+        # शीटमधून जुना डेटा चेक करणे
+        all_records = hishob_ws.get_all_records()
+        existing_row = None
+        row_index = None
+        
+        for i, record in enumerate(all_records):
+            if str(record.get("तारीख")) == date_str:
+                existing_row = record
+                row_index = i + 2 # हेडर १ली ओळ असते, म्हणून i + 2
+                break
+        
+        if existing_row:
+            st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे. तुम्ही तो खाली बदलू (Edit) शकता.")
+            btn_label = "💾 हिशोब अपडेट करा (Update)"
+        else:
+            btn_label = "💾 हिशोब गुगल शीटमध्ये सेव्ह करा"
+
+        # जुने आकडे भरणे (जर असतील तर)
+        def get_val(col_name):
+            if existing_row:
+                try:
+                    return int(existing_row.get(col_name, 0))
+                except:
+                    return 0
+            return 0
+
         with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹८०)", expanded=True):
             c1, c2 = st.columns(2)
             with c1:
-                v1 = st.number_input("उत्पन्नाचा दाखला", min_value=0, step=1)
-                v2 = st.number_input("वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1)
-                v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1)
-                v4 = st.number_input("जातीचा दाखला", min_value=0, step=1)
-                v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1)
-                v6 = st.number_input("वारसा दाखला", min_value=0, step=1)
+                v1 = st.number_input("उत्पन्नाचा दाखला", min_value=0, step=1, value=get_val("उत्पन्नाचा"))
+                v2 = st.number_input("वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1, value=get_val("वय/अधिवास"))
+                v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1, value=get_val("अल्पभूधारक"))
+                v4 = st.number_input("जातीचा दाखला", min_value=0, step=1, value=get_val("जातीचा"))
+                v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1, value=get_val("EWS"))
+                v6 = st.number_input("वारसा दाखला", min_value=0, step=1, value=get_val("वारसा"))
             with c2:
-                v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1)
-                v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1)
-                v9 = st.number_input("डोंगरी दाखला", min_value=0, step=1)
-                v10 = st.number_input("रहिवासी दाखला", min_value=0, step=1)
-                v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1)
-                v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1)
+                v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1, value=get_val("नॉन-क्रिमीलेअर"))
+                v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1, value=get_val("ज्येष्ठ नागरिक"))
+                v9 = st.number_input("डोंगरी दाखला", min_value=0, step=1, value=get_val("डोंगरी"))
+                v10 = st.number_input("रहिवासी दाखला", min_value=0, step=1, value=get_val("रहिवासी"))
+                v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"))
+                v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"))
             
             mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 80
 
         with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
-            v13 = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1)
+            v13 = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"))
             affidavit_rs = v13 * 80
 
         with st.expander("📁 ३. रेशन कार्ड कामे [दर: ₹६९]"):
-            v14 = st.number_input("नाव कमी करणे", min_value=0, step=1)
-            v15 = st.number_input("नाव दाखल करणे", min_value=0, step=1)
+            v14 = st.number_input("नाव कमी करणे", min_value=0, step=1, value=get_val("रेशन नाव कमी"))
+            v15 = st.number_input("नाव दाखल करणे", min_value=0, step=1, value=get_val("रेशन नाव दाखल"))
             ration_rs = (v14 + v15) * 69
 
         with st.expander("📁 ४. स्कॅनिंग [दर: ₹२ / पेज]"):
-            v16 = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1)
+            v16 = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1, value=get_val("स्कॅन पेजेस"))
             scan_rs = v16 * 2
 
         with st.expander("📁 ५. इतर किरकोळ कमाई"):
-            v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1)
+            v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"))
 
         grand_total = mahsul_rs + affidavit_rs + ration_rs + scan_rs + v17
 
@@ -165,15 +193,30 @@ if st.session_state["logged_in"]:
         </div>
         ''', unsafe_allow_html=True)
 
-        if st.button("💾 हिशोब गुगल शीटमध्ये सेव्ह करा", use_container_width=True, type="primary"):
+        if st.button(btn_label, use_container_width=True, type="primary"):
             row_data = [
-                str(date_today), st.session_state["current_user"], 
+                date_str, st.session_state["current_user"], 
                 v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, 
                 v13, v14, v15, v16, v17, grand_total
             ]
-            hishob_ws.append_row(row_data)
-            st.balloons()
-            st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
+            
+            # एडिट अपडेट करणे किंवा नवीन जोडणे
+            try:
+                if existing_row and row_index:
+                    # जुनी ओळ अपडेट करणे
+                    try:
+                        hishob_ws.update(f"A{row_index}:T{row_index}", [row_data])
+                    except:
+                        # काही gspread versions साठी पर्यायी पद्धत
+                        hishob_ws.update(values=[row_data], range_name=f"A{row_index}:T{row_index}")
+                    st.success("✅ रेकॉर्ड यशस्वीरित्या अपडेट झाला!")
+                else:
+                    # नवीन ओळ जोडणे
+                    hishob_ws.append_row(row_data)
+                    st.balloons()
+                    st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
+            except Exception as e:
+                st.error(f"⚠️ सेव्ह करताना अडचण आली: {e}")
 
     # --- टॅब २: रिपोर्टिंग आणि ॲडव्हान्स फिल्टर ---
     with tab2:
@@ -192,7 +235,7 @@ if st.session_state["logged_in"]:
             col_f1, col_f2 = st.columns(2)
             
             if filter_type == "विशिष्ट तारीख":
-                sel_date = st.date_input("तारीख निवडा:")
+                sel_date = st.date_input("तारीख निवडा (रिपोर्टसाठी):")
                 filtered_df = df[df['तारीख'].dt.date == sel_date]
             elif filter_type == "दोन तारखांच्या दरम्यान":
                 with col_f1: start_date = st.date_input("सुरुवातीची तारीख:")
@@ -213,7 +256,6 @@ if st.session_state["logged_in"]:
             report_type = st.radio("📊 रिपोर्टचा प्रकार:", ["संपूर्ण हिशोब (डिटेल)", "फक्त दाखल्यांची संख्या"], horizontal=True)
 
             if not filtered_df.empty:
-                # डायनॅमिक रिपोर्ट डेटा तयार करणे
                 report_list = []
                 grand_total_calc = 0
                 
@@ -227,7 +269,6 @@ if st.session_state["logged_in"]:
                             if count > 0:
                                 report_list.append({"तपशील (काम)": col, "एकूण संख्या": count})
                 else:
-                    # संपूर्ण हिशोब (डिटेल - गुणाकारासहित)
                     all_cols = list(rates.keys()) + ["इतर कमाई"]
                     for col in all_cols:
                         if col in filtered_df.columns:
@@ -243,23 +284,20 @@ if st.session_state["logged_in"]:
                                     report_list.append({"तपशील (काम)": col, "संख्या": count, "दर": f"₹ {rate}", "एकूण रक्कम (₹)": total_amt})
                                     grand_total_calc += total_amt
 
-                # रिपोर्ट प्रिंट करण्यासाठी HTML बनवणे
                 if report_list:
                     df_report = pd.DataFrame(report_list)
                     
-                    # रिपोर्टच्या कालावधीचे नाव तयार करणे (Excel आणि PDF दोन्हीसाठी)
                     if filter_type == "विशिष्ट तारीख":
-                        date_str = f"दिनांक: {sel_date.strftime('%d-%m-%Y')}"
+                        date_str_rep = f"दिनांक: {sel_date.strftime('%d-%m-%Y')}"
                     elif filter_type == "दोन तारखांच्या दरम्यान":
-                        date_str = f"कालावधी: {start_date.strftime('%d-%m-%Y')} ते {end_date.strftime('%d-%m-%Y')}"
+                        date_str_rep = f"कालावधी: {start_date.strftime('%d-%m-%Y')} ते {end_date.strftime('%d-%m-%Y')}"
                     elif filter_type == "विशिष्ट महिना":
-                        date_str = f"महिना: {sel_month_name} {sel_year}"
+                        date_str_rep = f"महिना: {sel_month_name} {sel_year}"
                     elif filter_type == "विशिष्ट वर्ष":
-                        date_str = f"वर्ष: {sel_year}"
+                        date_str_rep = f"वर्ष: {sel_year}"
                     else:
-                        date_str = "संपूर्ण डेटा (सर्व रेकॉर्ड्स)"
+                        date_str_rep = "संपूर्ण डेटा (सर्व रेकॉर्ड्स)"
 
-                    # स्क्रीनवर दाखवण्यासाठी HTML Table
                     st.markdown("---")
                     st.markdown(f"### 📋 रिपोर्ट प्रीव्ह्यू")
                     
@@ -281,35 +319,29 @@ if st.session_state["logged_in"]:
                     st.markdown(html_table, unsafe_allow_html=True)
                     st.markdown("<br>", unsafe_allow_html=True)
 
-                    # --- डाऊनलोड आणि प्रिंट ---
                     col_d1, col_d2 = st.columns(2)
                     
                     with col_d1:
-                        # --- 🌟 प्रिमियम उभी (Vertical) Excel फाईल (मराठी Mukta फॉन्टसह) ---
                         output = io.BytesIO()
                         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                             df_report.to_excel(writer, index=False, sheet_name='Report', startrow=3)
                             workbook = writer.book
                             worksheet = writer.sheets['Report']
-                            worksheet.set_paper(9) # A4 Size
-                            worksheet.set_portrait() # उभी प्रिंट
+                            worksheet.set_paper(9)
+                            worksheet.set_portrait() 
                             
-                            # नवीन 'Mukta' फॉन्ट सेटिंग्ज
                             title_format = workbook.add_format({'bold': True, 'font_size': 18, 'font_name': 'Mukta', 'align': 'center', 'valign': 'vcenter', 'color': '#1e3a8a'})
                             date_format = workbook.add_format({'bold': True, 'font_size': 13, 'font_name': 'Mukta', 'align': 'center', 'valign': 'vcenter', 'color': '#475569'})
-                            
                             header_format = workbook.add_format({'bold': True, 'font_size': 14, 'font_name': 'Mukta', 'bg_color': '#1e3a8a', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
                             cell_format = workbook.add_format({'font_size': 13, 'font_name': 'Mukta', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
                             cell_left_format = workbook.add_format({'font_size': 13, 'font_name': 'Mukta', 'border': 1, 'align': 'left', 'valign': 'vcenter'})
                             
-                            # टायटल आणि तारीख
                             worksheet.merge_range('A1:D1', "🏛️ स्मार्ट सेतू केंद्र - हिशोब अहवाल", title_format)
-                            worksheet.merge_range('A2:D2', date_str, date_format)
+                            worksheet.merge_range('A2:D2', date_str_rep, date_format)
                             worksheet.set_row(0, 30)
                             worksheet.set_row(1, 20)
                             worksheet.set_row(2, 10)
                             
-                            # कॉलमची रुंदी आणि ओळींची उंची
                             worksheet.set_column('A:A', 30, cell_left_format)
                             worksheet.set_column('B:D', 18, cell_format)
                             
@@ -319,7 +351,6 @@ if st.session_state["logged_in"]:
                             for row_num in range(len(df_report) + 4):
                                 worksheet.set_row(row_num, 22)
                                 
-                            # एकूण कमाई (Total) (नवीन Mukta फॉन्टसह)
                             if report_type == "संपूर्ण हिशोब (डिटेल)":
                                 last_row = len(df_report) + 4
                                 total_format = workbook.add_format({'bold': True, 'font_size': 15, 'font_name': 'Mukta', 'bg_color': '#f1f5f9', 'border': 1, 'align': 'right', 'valign': 'vcenter'})
@@ -333,7 +364,6 @@ if st.session_state["logged_in"]:
                         st.download_button(label="📥 A4 उभी Excel डाऊनलोड", data=excel_data, file_name="Smart_Setu_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                     
                     with col_d2:
-                        # 100% खात्रीशीर PDF / Print HTML फाईल डाऊनलोड
                         print_html = f"""
                         <!DOCTYPE html>
                         <html>
@@ -354,23 +384,20 @@ if st.session_state["logged_in"]:
                         </head>
                         <body onload="window.print()">
                             <h2>🏛️ स्मार्ट सेतू केंद्र - हिशोब अहवाल</h2>
-                            <div class="date-text">{date_str}</div>
+                            <div class="date-text">{date_str_rep}</div>
                             <table>
                                 <tr>
                         """
-                        # Headers
                         for col_name in df_report.columns:
                             print_html += f"<th>{col_name}</th>"
                         print_html += "</tr>"
                         
-                        # Data Rows
                         for _, row in df_report.iterrows():
                             print_html += "<tr>"
                             for val in row:
                                 print_html += f"<td>{val}</td>"
                             print_html += "</tr>"
                             
-                        # Total Row
                         if report_type == "संपूर्ण हिशोब (डिटेल)":
                             print_html += f"""
                             <tr class='total-row'>
@@ -380,7 +407,6 @@ if st.session_state["logged_in"]:
                             """
                         print_html += "</table><br><p style='text-align:center; color:#777; font-size:12px;'>* This is a computer generated report.</p></body></html>"
                         
-                        # थेट फाईल डाऊनलोड
                         st.download_button(label="🖨️ रिपोर्ट प्रिंट / PDF काढा", data=print_html, file_name="Print_Report.html", mime="text/html", use_container_width=True)
 
                 else:
