@@ -15,8 +15,6 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Poppins:wght@400;600;800&display=swap');
     html, body, [class*="css"] { font-family: 'Mukta', 'Poppins', sans-serif; }
     
-    /* डार्क मोड / लाईट मोड प्रॉब्लेम फिक्स करण्यासाठी .stApp चे बॅकग्राऊंड काढले आहे */
-    
     .main-title { font-size: 38px; font-weight: 800; text-align: center; margin-bottom: 5px; color: #1e3a8a; }
     .sub-title { text-align: center; font-size: 16px; color: #475569; margin-bottom: 25px; font-weight: 600; }
     
@@ -287,7 +285,7 @@ if st.session_state["logged_in"]:
                     col_d1, col_d2 = st.columns(2)
                     
                     with col_d1:
-                        # --- 🌟 प्रिमियम उभी (Vertical) Excel फाईल ---
+                        # --- 🌟 प्रिमियम उभी (Vertical) Excel फाईल (मराठी Mukta फॉन्टसह) ---
                         output = io.BytesIO()
                         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                             df_report.to_excel(writer, index=False, sheet_name='Report', startrow=3)
@@ -296,13 +294,13 @@ if st.session_state["logged_in"]:
                             worksheet.set_paper(9) # A4 Size
                             worksheet.set_portrait() # उभी प्रिंट
                             
-                            # फॉन्ट आणि डिझाईन सेटिंग्ज
-                            title_format = workbook.add_format({'bold': True, 'font_size': 16, 'font_name': 'Arial', 'align': 'center', 'valign': 'vcenter', 'color': '#1e3a8a'})
-                            date_format = workbook.add_format({'bold': True, 'font_size': 12, 'font_name': 'Arial', 'align': 'center', 'valign': 'vcenter', 'color': '#475569'})
+                            # नवीन 'Mukta' फॉन्ट सेटिंग्ज
+                            title_format = workbook.add_format({'bold': True, 'font_size': 18, 'font_name': 'Mukta', 'align': 'center', 'valign': 'vcenter', 'color': '#1e3a8a'})
+                            date_format = workbook.add_format({'bold': True, 'font_size': 13, 'font_name': 'Mukta', 'align': 'center', 'valign': 'vcenter', 'color': '#475569'})
                             
-                            header_format = workbook.add_format({'bold': True, 'font_size': 13, 'font_name': 'Arial', 'bg_color': '#1e3a8a', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
-                            cell_format = workbook.add_format({'font_size': 12, 'font_name': 'Arial', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
-                            cell_left_format = workbook.add_format({'font_size': 12, 'font_name': 'Arial', 'border': 1, 'align': 'left', 'valign': 'vcenter'})
+                            header_format = workbook.add_format({'bold': True, 'font_size': 14, 'font_name': 'Mukta', 'bg_color': '#1e3a8a', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
+                            cell_format = workbook.add_format({'font_size': 13, 'font_name': 'Mukta', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
+                            cell_left_format = workbook.add_format({'font_size': 13, 'font_name': 'Mukta', 'border': 1, 'align': 'left', 'valign': 'vcenter'})
                             
                             # टायटल आणि तारीख
                             worksheet.merge_range('A1:D1', "🏛️ स्मार्ट सेतू केंद्र - हिशोब अहवाल", title_format)
@@ -321,11 +319,11 @@ if st.session_state["logged_in"]:
                             for row_num in range(len(df_report) + 4):
                                 worksheet.set_row(row_num, 22)
                                 
-                            # एकूण कमाई (Total)
+                            # एकूण कमाई (Total) (नवीन Mukta फॉन्टसह)
                             if report_type == "संपूर्ण हिशोब (डिटेल)":
                                 last_row = len(df_report) + 4
-                                total_format = workbook.add_format({'bold': True, 'font_size': 14, 'font_name': 'Arial', 'bg_color': '#f1f5f9', 'border': 1, 'align': 'right', 'valign': 'vcenter'})
-                                total_amt_format = workbook.add_format({'bold': True, 'font_size': 14, 'font_name': 'Arial', 'bg_color': '#e2e8f0', 'font_color': '#059669', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
+                                total_format = workbook.add_format({'bold': True, 'font_size': 15, 'font_name': 'Mukta', 'bg_color': '#f1f5f9', 'border': 1, 'align': 'right', 'valign': 'vcenter'})
+                                total_amt_format = workbook.add_format({'bold': True, 'font_size': 15, 'font_name': 'Mukta', 'bg_color': '#e2e8f0', 'font_color': '#059669', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
                                 
                                 worksheet.merge_range(last_row, 0, last_row, 2, "एकूण कमाई:", total_format)
                                 worksheet.write(last_row, 3, f"₹ {grand_total_calc}", total_amt_format)
@@ -343,12 +341,13 @@ if st.session_state["logged_in"]:
                             <title>स्मार्ट सेतू अहवाल</title>
                             <meta charset="utf-8">
                             <style>
-                                body {{ font-family: Arial, sans-serif; padding: 40px; color: #333; }}
+                                @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&display=swap');
+                                body {{ font-family: 'Mukta', Arial, sans-serif; padding: 40px; color: #333; }}
                                 h2 {{ text-align: center; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; margin-bottom: 5px; }}
                                 .date-text {{ text-align: center; font-size: 16px; color: #555; margin-bottom: 20px; font-weight: bold; }}
                                 table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
                                 th {{ background-color: #f2f2f2; color: #333; font-weight: bold; padding: 12px; text-align: left; border: 1px solid #ddd; }}
-                                td {{ padding: 10px; border: 1px solid #ddd; font-size: 15px; }}
+                                td {{ padding: 10px; border: 1px solid #ddd; font-size: 16px; }}
                                 .total-row {{ font-weight: bold; background-color: #e2e8f0; font-size: 18px; }}
                                 .total-row td {{ padding: 15px; }}
                             </style>
