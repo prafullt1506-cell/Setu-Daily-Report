@@ -59,7 +59,7 @@ def init_db(sh):
     except gspread.WorksheetNotFound:
         hishob_ws = sh.add_worksheet(title="Hishob", rows="1000", cols="20")
         headers = ["तारीख", "युजर", "उत्पन्नाचा", "वय/अधिवास", "अल्पभूधारक", "जातीचा", "EWS", 
-                   "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
+                   "वारस", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
                    "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल", "स्कॅन पेजेस", "इतर कमाई", "एकूण रक्कम"]
         hishob_ws.append_row(headers)
     return hishob_ws
@@ -123,7 +123,7 @@ if st.session_state["logged_in"]:
     # --- दर पत्रक (Rates) ---
     rates = {
         "उत्पन्नाचा": 80, "वय/अधिवास": 80, "अल्पभूधारक": 80, "जातीचा": 80, "EWS": 80,
-        "वारसा": 80, "नॉन-क्रिमीलेअर": 80, "ज्येष्ठ नागरिक": 80, "डोंगरी": 80, "रहिवासी": 80, "शेतकरी": 80, "संजय गांधी": 80,
+        "वारस": 80, "नॉन-क्रिमीलेअर": 80, "ज्येष्ठ नागरिक": 80, "डोंगरी": 80, "रहिवासी": 80, "शेतकरी": 80, "संजय गांधी": 80,
         "प्रतिज्ञापत्रे": 80,
         "रेशन नाव कमी": 69, "रेशन नाव दाखल": 69,
         "स्कॅन पेजेस": 2
@@ -174,7 +174,7 @@ if st.session_state["logged_in"]:
                 v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1, value=get_val("अल्पभूधारक"))
                 v4 = st.number_input("जातीचा दाखला", min_value=0, step=1, value=get_val("जातीचा"))
                 v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1, value=get_val("EWS"))
-                v6 = st.number_input("वारसा दाखला", min_value=0, step=1, value=get_val("वारसा"))
+                v6 = st.number_input("वारस दाखला", min_value=0, step=1, value=get_val("वारसा"))
             with c2:
                 v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1, value=get_val("नॉन-क्रिमीलेअर"))
                 v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1, value=get_val("ज्येष्ठ नागरिक"))
