@@ -141,14 +141,12 @@ else:
             existing_row = None
             row_index = None
             
-            # तारीख आधीच आहे का ते चेक करणे
             for i, record in enumerate(all_records):
                 if str(record.get("तारीख")) == date_str:
                     existing_row = record
                     row_index = i + 2 
                     break
             
-            # 🔥 बदल: 'force_clear' असलं तरीही बटण नेहमी 'अपडेट'च राहील जर तारीख आधीच सेव्ह असेल
             if existing_row:
                 st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे. तुम्ही तो खाली बदलू (Edit) शकता.")
                 btn_label = "💾 हिशोब अपडेट करा (Update)"
@@ -231,7 +229,6 @@ else:
                     v13, v14, v15, v16, v17, grand_total
                 ]
                 try:
-                    # 🔥 सर्वात मोठा बदल: 'existing_row' असेल तर नेहमी UPDATE च होईल (force_clear असो वा नसो)
                     if existing_row and row_index:
                         try:
                             hishob_ws.update(f"A{row_index}:T{row_index}", [row_data])
@@ -291,6 +288,7 @@ else:
                 report_list = []
                 grand_total_calc = 0
                 
+                # टेबलसाठी डेटा तयार करणे
                 if report_type == "फक्त दाखल्यांची संख्या":
                     cols_to_check = list(rates.keys())
                     cols_to_check.remove("स्कॅन पेजेस") 
@@ -353,23 +351,57 @@ else:
                         st.markdown(html_table, unsafe_allow_html=True)
                     
                     with col_view2:
-                        st.markdown("### 📊 कामाचा आलेख")
-                        chart_df = df_report.copy()
-                        if report_type == "संपूर्ण हिशोब (डिटेल)":
-                            chart_df = chart_df[chart_df["तपशील (काम)"] != "इतर कमाई"]
-                            y_field = "एकूण रक्कम (₹)"
-                        else:
-                            y_field = "एकूण संख्या"
-                            
-                        st.bar_chart(data=chart_df, x="तपशील (काम)", y=y_field)
+                        st.markdown("### 📊 कामाचा आलेख (Dashboard)")
                         
-                        st.markdown(f"**🍩 विभागणी ({y_field})**")
-                        pie_chart = alt.Chart(chart_df).mark_arc(innerRadius=45).encode(
-                            theta=alt.Theta(field=y_field, type="quantitative"),
-                            color=alt.Color(field="तपशील (काम)", type="nominal", legend=alt.Legend(title="कामाचा प्रकार", orient="bottom")),
-                            tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip(y_field, title="रक्कम/संख्या")]
-                        ).properties(height=350)
-                        st.altair_chart(pie_chart, use_container_width=True)
+                        # 🔥 नवीन आणि फिक्स केलेला चार्ट डेटा (फक्त चार्ट्ससाठी)
+                        chart_data = []
+                        for col in rates.keys(): 
+                            if col in filtered_df.columns:
+                                count = filtered_df[col].sum()
+                                if count > 0:
+                                    chart_data.append({
+                                        "तपशील (काम)": col,
+                                        "एकूण संख्या": int(count),
+                                        "एकूण रक्कम (₹)": int(count * rates[col])
+                                    })
+                        
+                        # 'इतर कमाई' फक्त पैशांमध्ये दाखवण्यासाठी
+                        if "इतर कमाई" in filtered_df.columns:
+                            itar = filtered_df["इतर कमाई"].sum()
+                            if itar > 0:
+                                chart_data.append({
+                                    "तपशील (काम)": "इतर कमाई",
+                                    "एकूण संख्या": 0,
+                                    "एकूण रक्कम (₹)": int(itar)
+                                })
+                        
+                        if chart_data:
+                            clean_chart_df = pd.DataFrame(chart_data)
+                            
+                            # १. Bar Chart: फक्त दाखल्यांची संख्या (Count)
+                            st.markdown("**📈 दाखल्यांची संख्या**")
+                            bar_df = clean_chart_df[clean_chart_df["एकूण संख्या"] > 0]
+                            bar_chart = alt.Chart(bar_df).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
+                                x=alt.X('तपशील (काम)', sort='-y', title=""),
+                                y=alt.Y('एकूण संख्या', title="संख्या"),
+                                color=alt.Color('तपशील (काम)', legend=None),
+                                tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण संख्या", title="संख्या")]
+                            ).properties(height=280)
+                            st.altair_chart(bar_chart, use_container_width=True)
+                            
+                            # २. Premium Donut Chart: एकूण रक्कम (Amount)
+                            st.markdown("**🍩 कमाईची विभागणी (₹)**")
+                            pie_chart = alt.Chart(clean_chart_df).mark_arc(
+                                innerRadius=65,         # मधली मोकळी जागा
+                                stroke="#ffffff",       # पांढरी लाईन
+                                strokeWidth=2.5,        # लाईनची जाडी
+                                cornerRadius=4          # 3D सारखे गोलाकार कोपरे
+                            ).encode(
+                                theta=alt.Theta(field="एकूण रक्कम (₹)", type="quantitative"),
+                                color=alt.Color(field="तपशील (काम)", type="nominal", legend=alt.Legend(title="कामाचा प्रकार", orient="bottom")),
+                                tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण रक्कम (₹)", title="रक्कम (₹)")]
+                            ).properties(height=350)
+                            st.altair_chart(pie_chart, use_container_width=True)
 
                     st.markdown("---")
 
@@ -464,7 +496,7 @@ else:
 
                     st.markdown("---")
                     st.markdown('<div class="sub-title" style="margin-bottom:10px;">📦 सुरक्षित डेटाबेस बॅकअप</div>', unsafe_allow_html=True)
-                    st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला ছুটি आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
+                    st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
                     
                     backup_df = df.copy()
                     backup_df = backup_df.sort_values(by='तारीख', ascending=True) 
