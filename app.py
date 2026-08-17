@@ -4,11 +4,12 @@ import datetime
 import io
 import json
 import gspread
+import altair as alt  # नवीन: गोल (Pie) चार्ट बनवण्यासाठी
 
 # ==========================================
 # १. ॲपची सेटिंग आणि ॲडव्हान्स डिझाईन (Premium UI)
 # ==========================================
-st.set_page_config(page_title="स्मार्ट सेतू हिशोब", page_icon="🏛️", layout="centered")
+st.set_page_config(page_title="स्मार्ट सेतू हिशोब", page_icon="🏛️", layout="wide") # 'centered' ऐवजी 'wide' केले जेणेकरून पेज मोठे दिसेल
 
 st.markdown("""
     <style>
@@ -28,7 +29,7 @@ st.markdown("""
     .grand-total-label { font-size: 18px; opacity: 0.95; margin-bottom: 5px; font-weight: 600; }
 
     /* Report Table Styling */
-    .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .report-table { width: 100%; border-collapse: collapse; margin-top: 5px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
     .report-table th { background-color: #1e3a8a; color: white; padding: 12px; text-align: left; font-size: 16px; }
     .report-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155; font-size: 15px; font-weight: 600;}
     .report-table tr:last-child td { border-bottom: none; }
@@ -59,12 +60,11 @@ def init_db(sh):
     except gspread.WorksheetNotFound:
         hishob_ws = sh.add_worksheet(title="Hishob", rows="1000", cols="20")
         headers = ["तारीख", "युजर", "उत्पन्नाचा", "वय/अधिवास", "अल्पभूधारक", "जातीचा", "EWS", 
-                   "वारस", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
+                   "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
                    "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल", "स्कॅन पेजेस", "इतर कमाई", "एकूण रक्कम"]
         hishob_ws.append_row(headers)
     return hishob_ws
 
-# ⚡ नवीन फीचर: सुपरफास्ट स्पीडसाठी डेटा Caching (१० सेकंदांसाठी डेटा सेव्ह राहील)
 @st.cache_data(show_spinner=False, ttl=10)
 def fetch_all_records(_ws):
     return _ws.get_all_records()
@@ -77,21 +77,18 @@ if "logged_in" not in st.session_state:
 if "current_user" not in st.session_state:
     st.session_state["current_user"] = ""
 
-# Clear Button साठी State Management
 if "force_clear" not in st.session_state:
     st.session_state["force_clear"] = False
 if "last_date" not in st.session_state:
     st.session_state["last_date"] = str(datetime.date.today())
 
-st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
-
-AUTHORIZED_USERS = {
-    "setuknk": "2026",
-}
-
+# लॉगिनच्या वेळी पेज सेंटरमध्ये ठेवण्यासाठी 
 if not st.session_state["logged_in"]:
-    st.markdown('<div class="sub-title">🔐 सुरक्षित लॉगिन (Secure Login)</div>', unsafe_allow_html=True)
-    with st.container():
+    col_l1, col_login, col_l3 = st.columns([1, 2, 1])
+    with col_login:
+        st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sub-title">🔐 सुरक्षित लॉगिन (Secure Login)</div>', unsafe_allow_html=True)
+        AUTHORIZED_USERS = {"setuknk": "2026"}
         login_username = st.text_input("👤 तुमचा युझरनेम किंवा ID टाका:")
         login_password = st.text_input("🔑 तुमचा पासवर्ड किंवा PIN टाका:", type="password")
         if st.button("🚀 लॉगिन करा (Login)", type="primary", use_container_width=True):
@@ -101,16 +98,16 @@ if not st.session_state["logged_in"]:
                 st.rerun()
             else:
                 st.error("❌ चुकीचा युझरनेम किंवा पासवर्ड! प्रवेश नाकारला.")
-
-# ==========================================
-# ४. मुख्य हिशोब ॲप
-# ==========================================
-if st.session_state["logged_in"]:
+else:
+    # ==========================================
+    # ४. मुख्य हिशोब ॲप
+    # ==========================================
+    st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="sub-title">👋 स्वागत आहे! ({st.session_state["current_user"]})</div>', unsafe_allow_html=True)
     
-    col_x1, col_x2 = st.columns([4, 1])
+    col_x1, col_x2 = st.columns([6, 1])
     with col_x2:
-        if st.button("🚪 लॉग आउट"):
+        if st.button("🚪 लॉग आउट", use_container_width=True):
             st.session_state["logged_in"] = False
             st.session_state["current_user"] = ""
             st.rerun()
@@ -120,138 +117,132 @@ if st.session_state["logged_in"]:
     sh = connect_to_gsheet()
     hishob_ws = init_db(sh)
 
-    # --- दर पत्रक (Rates) ---
     rates = {
         "उत्पन्नाचा": 80, "वय/अधिवास": 80, "अल्पभूधारक": 80, "जातीचा": 80, "EWS": 80,
-        "वारस": 80, "नॉन-क्रिमीलेअर": 80, "ज्येष्ठ नागरिक": 80, "डोंगरी": 80, "रहिवासी": 80, "शेतकरी": 80, "संजय गांधी": 80,
+        "वारसा": 80, "नॉन-क्रिमीलेअर": 80, "ज्येष्ठ नागरिक": 80, "डोंगरी": 80, "रहिवासी": 80, "शेतकरी": 80, "संजय गांधी": 80,
         "प्रतिज्ञापत्रे": 80,
         "रेशन नाव कमी": 69, "रेशन नाव दाखल": 69,
         "स्कॅन पेजेस": 2
     }
 
-    # --- टॅब १: हिशोब भरणे आणि एडिट करणे ---
     with tab1:
-        date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
-        date_str = str(date_today)
-        
-        # तारीख बदलली की Clear Button चा इफेक्ट रिसेट करणे
-        if date_str != st.session_state["last_date"]:
-            st.session_state["force_clear"] = False
-            st.session_state["last_date"] = date_str
-        
-        # ⚡ फास्ट कॅशेमधून डेटा वाचणे
-        all_records = fetch_all_records(hishob_ws)
-        existing_row = None
-        row_index = None
-        
-        for i, record in enumerate(all_records):
-            if str(record.get("तारीख")) == date_str:
-                existing_row = record
-                row_index = i + 2 # हेडर १ली ओळ असते, म्हणून i + 2
-                break
-        
-        if existing_row and not st.session_state["force_clear"]:
-            st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे. तुम्ही तो खाली बदलू (Edit) शकता.")
-            btn_label = "💾 हिशोब अपडेट करा (Update)"
-        else:
-            btn_label = "💾 हिशोब गुगल शीटमध्ये सेव्ह करा"
-
-        def get_val(col_name):
-            if st.session_state["force_clear"]:
-                return 0
-            if existing_row:
-                try:
-                    return int(existing_row.get(col_name, 0))
-                except:
-                    return 0
-            return 0
-
-        with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹८०)", expanded=True):
-            c1, c2 = st.columns(2)
-            with c1:
-                v1 = st.number_input("उत्पन्नाचा दाखला", min_value=0, step=1, value=get_val("उत्पन्नाचा"))
-                v2 = st.number_input("वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1, value=get_val("वय/अधिवास"))
-                v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1, value=get_val("अल्पभूधारक"))
-                v4 = st.number_input("जातीचा दाखला", min_value=0, step=1, value=get_val("जातीचा"))
-                v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1, value=get_val("EWS"))
-                v6 = st.number_input("वारस दाखला", min_value=0, step=1, value=get_val("वारसा"))
-            with c2:
-                v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1, value=get_val("नॉन-क्रिमीलेअर"))
-                v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1, value=get_val("ज्येष्ठ नागरिक"))
-                v9 = st.number_input("डोंगरी दाखला", min_value=0, step=1, value=get_val("डोंगरी"))
-                v10 = st.number_input("रहिवासी दाखला", min_value=0, step=1, value=get_val("रहिवासी"))
-                v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"))
-                v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"))
+        # फॉर्म सेंटरमध्ये दिसावा म्हणून
+        col_t1_space1, col_t1_main, col_t1_space2 = st.columns([1, 3, 1])
+        with col_t1_main:
+            date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
+            date_str = str(date_today)
             
-            mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 80
-
-        with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
-            v13 = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"))
-            affidavit_rs = v13 * 80
-
-        with st.expander("📁 ३. रेशन कार्ड कामे [दर: ₹६९]"):
-            v14 = st.number_input("नाव कमी करणे", min_value=0, step=1, value=get_val("रेशन नाव कमी"))
-            v15 = st.number_input("नाव दाखल करणे", min_value=0, step=1, value=get_val("रेशन नाव दाखल"))
-            ration_rs = (v14 + v15) * 69
-
-        with st.expander("📁 ४. स्कॅनिंग [दर: ₹२ / पेज]"):
-            v16 = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1, value=get_val("स्कॅन पेजेस"))
-            scan_rs = v16 * 2
-
-        with st.expander("📁 ५. इतर किरकोळ कमाई"):
-            v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"))
-
-        grand_total = mahsul_rs + affidavit_rs + ration_rs + scan_rs + v17
-
-        st.markdown(f'''
-        <div class="grand-total-card">
-            <div class="grand-total-label">💰 आजची एकूण कमाई</div>
-            <div class="grand-total-text">₹ {grand_total}</div>
-        </div>
-        ''', unsafe_allow_html=True)
-
-        # 🧹 नवीन फीचर: 'सेव्ह' आणि 'क्लिअर' बटणे शेजारी-शेजारी
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            save_clicked = st.button(btn_label, use_container_width=True, type="primary")
-        with col_btn2:
-            clear_clicked = st.button("🧹 सर्व आकडे पुसा (Clear)", use_container_width=True)
-
-        if clear_clicked:
-            st.session_state["force_clear"] = True
-            st.rerun()
-
-        if save_clicked:
-            row_data = [
-                date_str, st.session_state["current_user"], 
-                v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, 
-                v13, v14, v15, v16, v17, grand_total
-            ]
-            
-            try:
-                if existing_row and row_index and not st.session_state["force_clear"]:
-                    try:
-                        hishob_ws.update(f"A{row_index}:T{row_index}", [row_data])
-                    except:
-                        hishob_ws.update(values=[row_data], range_name=f"A{row_index}:T{row_index}")
-                    st.success("✅ रेकॉर्ड यशस्वीरित्या अपडेट झाला!")
-                else:
-                    hishob_ws.append_row(row_data)
-                    st.balloons()
-                    st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
-                
-                # ⚡ सेव्ह केल्यावर कॅशे (Memory) क्लिअर करणे, जेणेकरून नवीन डेटा लगेच रिपोर्टमध्ये दिसेल
-                fetch_all_records.clear()
+            if date_str != st.session_state["last_date"]:
                 st.session_state["force_clear"] = False
-                
-            except Exception as e:
-                st.error(f"⚠️ सेव्ह करताना अडचण आली: {e}")
+                st.session_state["last_date"] = date_str
+            
+            all_records = fetch_all_records(hishob_ws)
+            existing_row = None
+            row_index = None
+            
+            for i, record in enumerate(all_records):
+                if str(record.get("तारीख")) == date_str:
+                    existing_row = record
+                    row_index = i + 2 
+                    break
+            
+            if existing_row and not st.session_state["force_clear"]:
+                st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे. तुम्ही तो खाली बदलू (Edit) शकता.")
+                btn_label = "💾 हिशोब अपडेट करा (Update)"
+            else:
+                btn_label = "💾 हिशोब गुगल शीटमध्ये सेव्ह करा"
 
-    # --- टॅब २: रिपोर्टिंग आणि ॲडव्हान्स फिल्टर ---
+            def get_val(col_name):
+                if st.session_state["force_clear"]:
+                    return 0
+                if existing_row:
+                    try:
+                        return int(existing_row.get(col_name, 0))
+                    except:
+                        return 0
+                return 0
+
+            with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹८०)", expanded=True):
+                c1, c2 = st.columns(2)
+                with c1:
+                    v1 = st.number_input("उत्पन्नाचा दाखला", min_value=0, step=1, value=get_val("उत्पन्नाचा"))
+                    v2 = st.number_input("वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1, value=get_val("वय/अधिवास"))
+                    v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1, value=get_val("अल्पभूधारक"))
+                    v4 = st.number_input("जातीचा दाखला", min_value=0, step=1, value=get_val("जातीचा"))
+                    v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1, value=get_val("EWS"))
+                    v6 = st.number_input("वारसा दाखला", min_value=0, step=1, value=get_val("वारसा"))
+                with c2:
+                    v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1, value=get_val("नॉन-क्रिमीलेअर"))
+                    v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1, value=get_val("ज्येष्ठ नागरिक"))
+                    v9 = st.number_input("डोंगरी दाखला", min_value=0, step=1, value=get_val("डोंगरी"))
+                    v10 = st.number_input("रहिवासी दाखला", min_value=0, step=1, value=get_val("रहिवासी"))
+                    v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"))
+                    v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"))
+                
+                mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 80
+
+            with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
+                v13 = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"))
+                affidavit_rs = v13 * 80
+
+            with st.expander("📁 ३. रेशन कार्ड कामे [दर: ₹६९]"):
+                v14 = st.number_input("नाव कमी करणे", min_value=0, step=1, value=get_val("रेशन नाव कमी"))
+                v15 = st.number_input("नाव दाखल करणे", min_value=0, step=1, value=get_val("रेशन नाव दाखल"))
+                ration_rs = (v14 + v15) * 69
+
+            with st.expander("📁 ४. स्कॅनिंग [दर: ₹२ / पेज]"):
+                v16 = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1, value=get_val("स्कॅन पेजेस"))
+                scan_rs = v16 * 2
+
+            with st.expander("📁 ५. इतर किरकोळ कमाई"):
+                v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"))
+
+            grand_total = mahsul_rs + affidavit_rs + ration_rs + scan_rs + v17
+
+            st.markdown(f'''
+            <div class="grand-total-card">
+                <div class="grand-total-label">💰 आजची एकूण कमाई</div>
+                <div class="grand-total-text">₹ {grand_total}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                save_clicked = st.button(btn_label, use_container_width=True, type="primary")
+            with col_btn2:
+                clear_clicked = st.button("🧹 सर्व आकडे पुसा (Clear)", use_container_width=True)
+
+            if clear_clicked:
+                st.session_state["force_clear"] = True
+                st.rerun()
+
+            if save_clicked:
+                row_data = [
+                    date_str, st.session_state["current_user"], 
+                    v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, 
+                    v13, v14, v15, v16, v17, grand_total
+                ]
+                try:
+                    if existing_row and row_index and not st.session_state["force_clear"]:
+                        try:
+                            hishob_ws.update(f"A{row_index}:T{row_index}", [row_data])
+                        except:
+                            hishob_ws.update(values=[row_data], range_name=f"A{row_index}:T{row_index}")
+                        st.success("✅ रेकॉर्ड यशस्वीरित्या अपडेट झाला!")
+                    else:
+                        hishob_ws.append_row(row_data)
+                        st.balloons()
+                        st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
+                    
+                    fetch_all_records.clear()
+                    st.session_state["force_clear"] = False
+                    
+                except Exception as e:
+                    st.error(f"⚠️ सेव्ह करताना अडचण आली: {e}")
+
     with tab2:
         st.markdown('<div class="sub-title" style="margin-bottom:10px;">🔍 ॲडव्हान्स अहवाल (Advanced Reports)</div>', unsafe_allow_html=True)
         
-        # ⚡ फास्ट कॅशेमधून डेटा वाचणे
         all_data = fetch_all_records(hishob_ws)
         df = pd.DataFrame(all_data)
         
@@ -292,7 +283,6 @@ if st.session_state["logged_in"]:
                 if report_type == "फक्त दाखल्यांची संख्या":
                     cols_to_check = list(rates.keys())
                     cols_to_check.remove("स्कॅन पेजेस") 
-                    
                     for col in cols_to_check:
                         if col in filtered_df.columns:
                             count = filtered_df[col].sum()
@@ -329,43 +319,56 @@ if st.session_state["logged_in"]:
                         date_str_rep = "संपूर्ण डेटा (सर्व रेकॉर्ड्स)"
 
                     st.markdown("---")
-                    st.markdown(f"### 📋 रिपोर्ट प्रीव्ह्यू")
                     
-                    html_table = "<table class='report-table'><tr>"
-                    for col_name in df_report.columns:
-                        html_table += f"<th>{col_name}</th>"
-                    html_table += "</tr>"
+                    # ==========================================
+                    # 🌟 नवीन लेआउट: डावीकडे टेबल आणि उजवीकडे दोन्ही चार्ट्स
+                    # ==========================================
+                    col_view1, col_view2 = st.columns([1.2, 1]) # डावा भाग थोडा मोठा
                     
-                    for _, row in df_report.iterrows():
-                        html_table += "<tr>"
-                        for val in row:
-                            html_table += f"<td>{val}</td>"
+                    with col_view1:
+                        st.markdown(f"### 📋 रिपोर्ट प्रीव्ह्यू")
+                        html_table = "<table class='report-table'><tr>"
+                        for col_name in df_report.columns:
+                            html_table += f"<th>{col_name}</th>"
                         html_table += "</tr>"
                         
-                    if report_type == "संपूर्ण हिशोब (डिटेल)":
-                        html_table += f"<tr class='report-total-row'><td colspan='3' style='text-align:right;'>एकूण कमाई:</td><td>₹ {grand_total_calc}</td></tr>"
-                    html_table += "</table>"
+                        for _, row in df_report.iterrows():
+                            html_table += "<tr>"
+                            for val in row:
+                                html_table += f"<td>{val}</td>"
+                            html_table += "</tr>"
+                            
+                        if report_type == "संपूर्ण हिशोब (डिटेल)":
+                            html_table += f"<tr class='report-total-row'><td colspan='3' style='text-align:right;'>एकूण कमाई:</td><td>₹ {grand_total_calc}</td></tr>"
+                        html_table += "</table>"
+                        
+                        st.markdown(html_table, unsafe_allow_html=True)
                     
-                    st.markdown(html_table, unsafe_allow_html=True)
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    
-                    # ==========================================
-                    # 📊 नवीन फीचर: डॅशबोर्ड ग्राफ (Visual Chart)
-                    # ==========================================
-                    st.markdown("### 📊 कामाचा आलेख (Dashboard Chart)")
-                    chart_df = df_report.copy()
-                    if report_type == "संपूर्ण हिशोब (डिटेल)":
-                        # 'इतर कमाई' वगळून चार्ट बनवणे
-                        chart_df = chart_df[chart_df["तपशील (काम)"] != "इतर कमाई"]
-                        st.bar_chart(data=chart_df, x="तपशील (काम)", y="एकूण रक्कम (₹)")
-                    else:
-                        st.bar_chart(data=chart_df, x="तपशील (काम)", y="एकूण संख्या")
+                    with col_view2:
+                        st.markdown("### 📊 कामाचा आलेख")
+                        chart_df = df_report.copy()
+                        if report_type == "संपूर्ण हिशोब (डिटेल)":
+                            chart_df = chart_df[chart_df["तपशील (काम)"] != "इतर कमाई"]
+                            y_field = "एकूण रक्कम (₹)"
+                        else:
+                            y_field = "एकूण संख्या"
+                            
+                        # १. Bar Chart
+                        st.bar_chart(data=chart_df, x="तपशील (काम)", y=y_field)
+                        
+                        # २. Pie (Donut) Chart
+                        st.markdown(f"**🍩 विभागणी ({y_field})**")
+                        pie_chart = alt.Chart(chart_df).mark_arc(innerRadius=45).encode(
+                            theta=alt.Theta(field=y_field, type="quantitative"),
+                            color=alt.Color(field="तपशील (काम)", type="nominal", legend=alt.Legend(title="कामाचा प्रकार", orient="bottom")),
+                            tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip(y_field, title="रक्कम/संख्या")]
+                        ).properties(height=350)
+                        st.altair_chart(pie_chart, use_container_width=True)
 
-                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown("---")
 
                     # --- डाऊनलोड आणि प्रिंट ---
                     col_d1, col_d2 = st.columns(2)
-                    
                     with col_d1:
                         output = io.BytesIO()
                         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
