@@ -269,30 +269,63 @@ if st.session_state["logged_in"]:
                     # --- डाऊनलोड आणि प्रिंट ---
                     col_d1, col_d2 = st.columns(2)
                     
-                    with col_d1:
-                        # उभी (Vertical) Excel फाईल
+                   with col_d1:
+                        # --- 🌟 प्रिमियम उभी (Vertical) Excel फाईल ---
                         output = io.BytesIO()
                         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                            df_report.to_excel(writer, index=False, sheet_name='Report')
+                            df_report.to_excel(writer, index=False, sheet_name='Report', startrow=3) # टेबल ३ऱ्या ओळीपासून सुरू होईल
                             workbook = writer.book
                             worksheet = writer.sheets['Report']
-                            worksheet.set_paper(9) # A4
-                            worksheet.set_portrait() # उभी (Vertical)
+                            worksheet.set_paper(9) # A4 Size
+                            worksheet.set_portrait() # उभी प्रिंट
                             
-                            header_format = workbook.add_format({'bold': True, 'font_size': 12, 'bg_color': '#1e3a8a', 'font_color': 'white', 'border': 1})
-                            cell_format = workbook.add_format({'font_size': 11, 'border': 1})
+                            # १. रिपोर्टच्या कालावधीचे नाव तयार करणे
+                            if filter_type == "विशिष्ट तारीख":
+                                date_str = f"दिनांक: {sel_date.strftime('%d-%m-%Y')}"
+                            elif filter_type == "दोन तारखांच्या दरम्यान":
+                                date_str = f"कालावधी: {start_date.strftime('%d-%m-%Y')} ते {end_date.strftime('%d-%m-%Y')}"
+                            elif filter_type == "विशिष्ट महिना":
+                                date_str = f"महिना: {sel_month_name} {sel_year}"
+                            elif filter_type == "विशिष्ट वर्ष":
+                                date_str = f"वर्ष: {sel_year}"
+                            else:
+                                date_str = "संपूर्ण डेटा (सर्व रेकॉर्ड्स)"
+
+                            # २. फॉन्ट आणि डिझाईन सेटिंग्ज (मोठे आणि ठळक)
+                            title_format = workbook.add_format({'bold': True, 'font_size': 16, 'font_name': 'Arial', 'align': 'center', 'valign': 'vcenter', 'color': '#1e3a8a'})
+                            date_format = workbook.add_format({'bold': True, 'font_size': 12, 'font_name': 'Arial', 'align': 'center', 'valign': 'vcenter', 'color': '#475569'})
                             
-                            worksheet.set_column('A:A', 25, cell_format)
-                            worksheet.set_column('B:D', 15, cell_format)
+                            header_format = workbook.add_format({'bold': True, 'font_size': 13, 'font_name': 'Arial', 'bg_color': '#1e3a8a', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
+                            cell_format = workbook.add_format({'font_size': 12, 'font_name': 'Arial', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
+                            cell_left_format = workbook.add_format({'font_size': 12, 'font_name': 'Arial', 'border': 1, 'align': 'left', 'valign': 'vcenter'}) # नावासाठी डावीकडे
                             
+                            # ३. टायटल आणि तारीख एक्सेलमध्ये टाकणे
+                            worksheet.merge_range('A1:D1', "🏛️ स्मार्ट सेतू केंद्र - हिशोब अहवाल", title_format)
+                            worksheet.merge_range('A2:D2', date_str, date_format)
+                            worksheet.set_row(0, 30) # टायटलची उंची
+                            worksheet.set_row(1, 20) # तारखेची उंची
+                            worksheet.set_row(2, 10) # थोडी मोकळी जागा
+                            
+                            # ४. कॉलमची रुंदी आणि ओळींची उंची वाढवणे
+                            worksheet.set_column('A:A', 30, cell_left_format) # कामाचे नाव मोठा कॉलम
+                            worksheet.set_column('B:D', 18, cell_format) # बाकीचे कॉलम्स
+                            
+                            # हेडिंग्ज आणि डेटा लिहिणे
                             for col_num, value in enumerate(df_report.columns.values):
-                                worksheet.write(0, col_num, value, header_format)
+                                worksheet.write(3, col_num, value, header_format)
+                            
+                            for row_num in range(len(df_report) + 4): # सर्व ओळींची उंची वाढवणे
+                                worksheet.set_row(row_num, 22)
                                 
+                            # ५. एकूण कमाई (Total) ची स्टाईल
                             if report_type == "संपूर्ण हिशोब (डिटेल)":
-                                last_row = len(df_report) + 1
-                                total_format = workbook.add_format({'bold': True, 'font_size': 12, 'bg_color': '#f1f5f9', 'border': 1, 'align': 'right'})
+                                last_row = len(df_report) + 4
+                                total_format = workbook.add_format({'bold': True, 'font_size': 14, 'font_name': 'Arial', 'bg_color': '#f1f5f9', 'border': 1, 'align': 'right', 'valign': 'vcenter'})
+                                total_amt_format = workbook.add_format({'bold': True, 'font_size': 14, 'font_name': 'Arial', 'bg_color': '#e2e8f0', 'font_color': '#059669', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
+                                
                                 worksheet.merge_range(last_row, 0, last_row, 2, "एकूण कमाई:", total_format)
-                                worksheet.write(last_row, 3, f"₹ {grand_total_calc}", total_format)
+                                worksheet.write(last_row, 3, f"₹ {grand_total_calc}", total_amt_format)
+                                worksheet.set_row(last_row, 28) # टोटलच्या ओळीची उंची अजून मोठी
 
                         excel_data = output.getvalue()
                         st.download_button(label="📥 A4 उभी Excel डाऊनलोड", data=excel_data, file_name="Smart_Setu_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
