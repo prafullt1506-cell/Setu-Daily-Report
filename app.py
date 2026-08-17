@@ -4,12 +4,12 @@ import datetime
 import io
 import json
 import gspread
-import altair as alt  # नवीन: गोल (Pie) चार्ट बनवण्यासाठी
+import altair as alt
 
 # ==========================================
 # १. ॲपची सेटिंग आणि ॲडव्हान्स डिझाईन (Premium UI)
 # ==========================================
-st.set_page_config(page_title="स्मार्ट सेतू हिशोब", page_icon="🏛️", layout="wide") # 'centered' ऐवजी 'wide' केले जेणेकरून पेज मोठे दिसेल
+st.set_page_config(page_title="स्मार्ट सेतू हिशोब", page_icon="🏛️", layout="wide")
 
 st.markdown("""
     <style>
@@ -82,7 +82,6 @@ if "force_clear" not in st.session_state:
 if "last_date" not in st.session_state:
     st.session_state["last_date"] = str(datetime.date.today())
 
-# लॉगिनच्या वेळी पेज सेंटरमध्ये ठेवण्यासाठी 
 if not st.session_state["logged_in"]:
     col_l1, col_login, col_l3 = st.columns([1, 2, 1])
     with col_login:
@@ -126,7 +125,6 @@ else:
     }
 
     with tab1:
-        # फॉर्म सेंटरमध्ये दिसावा म्हणून
         col_t1_space1, col_t1_main, col_t1_space2 = st.columns([1, 3, 1])
         with col_t1_main:
             date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
@@ -198,10 +196,13 @@ else:
                 v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"))
 
             grand_total = mahsul_rs + affidavit_rs + ration_rs + scan_rs + v17
+            
+            # स्पष्ट समजण्यासाठी टायटल बदलले
+            date_label_text = "आजची" if date_str == str(datetime.date.today()) else f"{datetime.datetime.strptime(date_str, '%Y-%m-%d').strftime('%d-%m-%Y')} ची"
 
             st.markdown(f'''
             <div class="grand-total-card">
-                <div class="grand-total-label">💰 आजची एकूण कमाई</div>
+                <div class="grand-total-label">💰 {date_label_text} एकूण कमाई</div>
                 <div class="grand-total-text">₹ {grand_total}</div>
             </div>
             ''', unsafe_allow_html=True)
@@ -249,14 +250,15 @@ else:
         if not df.empty:
             df['तारीख'] = pd.to_datetime(df['तारीख'])
             
+            # 🔥 सगळ्यात महत्त्वाचा बदल: 'विशिष्ट तारीख' बाय-डिफॉल्ट सेट केली आहे (म्हणजे फक्त आजचा डेटा आधी दिसेल)
             filter_type = st.selectbox("📅 रिपोर्टचा कालावधी निवडा:", 
-                                       ["सर्व डेटा", "विशिष्ट तारीख", "दोन तारखांच्या दरम्यान", "विशिष्ट महिना", "विशिष्ट वर्ष"])
+                                       ["विशिष्ट तारीख", "दोन तारखांच्या दरम्यान", "विशिष्ट महिना", "विशिष्ट वर्ष", "सर्व डेटा"])
             
             filtered_df = df.copy()
             col_f1, col_f2 = st.columns(2)
             
             if filter_type == "विशिष्ट तारीख":
-                sel_date = st.date_input("तारीख निवडा (रिपोर्टसाठी):")
+                sel_date = st.date_input("तारीख निवडा (रिपोर्टसाठी):", datetime.date.today())
                 filtered_df = df[df['तारीख'].dt.date == sel_date]
             elif filter_type == "दोन तारखांच्या दरम्यान":
                 with col_f1: start_date = st.date_input("सुरुवातीची तारीख:")
@@ -320,10 +322,7 @@ else:
 
                     st.markdown("---")
                     
-                    # ==========================================
-                    # 🌟 नवीन लेआउट: डावीकडे टेबल आणि उजवीकडे दोन्ही चार्ट्स
-                    # ==========================================
-                    col_view1, col_view2 = st.columns([1.2, 1]) # डावा भाग थोडा मोठा
+                    col_view1, col_view2 = st.columns([1.2, 1])
                     
                     with col_view1:
                         st.markdown(f"### 📋 रिपोर्ट प्रीव्ह्यू")
@@ -353,10 +352,8 @@ else:
                         else:
                             y_field = "एकूण संख्या"
                             
-                        # १. Bar Chart
                         st.bar_chart(data=chart_df, x="तपशील (काम)", y=y_field)
                         
-                        # २. Pie (Donut) Chart
                         st.markdown(f"**🍩 विभागणी ({y_field})**")
                         pie_chart = alt.Chart(chart_df).mark_arc(innerRadius=45).encode(
                             theta=alt.Theta(field=y_field, type="quantitative"),
@@ -367,7 +364,6 @@ else:
 
                     st.markdown("---")
 
-                    # --- डाऊनलोड आणि प्रिंट ---
                     col_d1, col_d2 = st.columns(2)
                     with col_d1:
                         output = io.BytesIO()
@@ -457,9 +453,6 @@ else:
                         
                         st.download_button(label="🖨️ रिपोर्ट प्रिंट / PDF काढा", data=print_html, file_name="Print_Report.html", mime="text/html", use_container_width=True)
 
-                    # ==========================================
-                    # सुरक्षित डेटाबेस बॅकअप (AutoFilter सह)
-                    # ==========================================
                     st.markdown("---")
                     st.markdown('<div class="sub-title" style="margin-bottom:10px;">📦 सुरक्षित डेटाबेस बॅकअप</div>', unsafe_allow_html=True)
                     st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
