@@ -37,7 +37,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# २. गुगल शीट कनेक्शन
+# २. गुगल शीट कनेक्शन आणि सुपरफास्ट कॅशिंग
 # ==========================================
 def connect_to_gsheet():
     try:
@@ -64,6 +64,11 @@ def init_db(sh):
         hishob_ws.append_row(headers)
     return hishob_ws
 
+# ⚡ नवीन फीचर: सुपरफास्ट स्पीडसाठी डेटा Caching (१० सेकंदांसाठी डेटा सेव्ह राहील)
+@st.cache_data(show_spinner=False, ttl=10)
+def fetch_all_records(_ws):
+    return _ws.get_all_records()
+
 # ==========================================
 # ३. सिक्युरिटी सिस्टीम (Login)
 # ==========================================
@@ -71,6 +76,12 @@ if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 if "current_user" not in st.session_state:
     st.session_state["current_user"] = ""
+
+# Clear Button साठी State Management
+if "force_clear" not in st.session_state:
+    st.session_state["force_clear"] = False
+if "last_date" not in st.session_state:
+    st.session_state["last_date"] = str(datetime.date.today())
 
 st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
 
@@ -123,8 +134,13 @@ if st.session_state["logged_in"]:
         date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
         date_str = str(date_today)
         
-        # शीटमधून जुना डेटा चेक करणे
-        all_records = hishob_ws.get_all_records()
+        # तारीख बदलली की Clear Button चा इफेक्ट रिसेट करणे
+        if date_str != st.session_state["last_date"]:
+            st.session_state["force_clear"] = False
+            st.session_state["last_date"] = date_str
+        
+        # ⚡ फास्ट कॅशेमधून डेटा वाचणे
+        all_records = fetch_all_records(hishob_ws)
         existing_row = None
         row_index = None
         
@@ -134,13 +150,15 @@ if st.session_state["logged_in"]:
                 row_index = i + 2 # हेडर १ली ओळ असते, म्हणून i + 2
                 break
         
-        if existing_row:
+        if existing_row and not st.session_state["force_clear"]:
             st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे. तुम्ही तो खाली बदलू (Edit) शकता.")
             btn_label = "💾 हिशोब अपडेट करा (Update)"
         else:
             btn_label = "💾 हिशोब गुगल शीटमध्ये सेव्ह करा"
 
         def get_val(col_name):
+            if st.session_state["force_clear"]:
+                return 0
             if existing_row:
                 try:
                     return int(existing_row.get(col_name, 0))
@@ -192,7 +210,18 @@ if st.session_state["logged_in"]:
         </div>
         ''', unsafe_allow_html=True)
 
-        if st.button(btn_label, use_container_width=True, type="primary"):
+        # 🧹 नवीन फीचर: 'सेव्ह' आणि 'क्लिअर' बटणे शेजारी-शेजारी
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            save_clicked = st.button(btn_label, use_container_width=True, type="primary")
+        with col_btn2:
+            clear_clicked = st.button("🧹 सर्व आकडे पुसा (Clear)", use_container_width=True)
+
+        if clear_clicked:
+            st.session_state["force_clear"] = True
+            st.rerun()
+
+        if save_clicked:
             row_data = [
                 date_str, st.session_state["current_user"], 
                 v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, 
@@ -200,7 +229,7 @@ if st.session_state["logged_in"]:
             ]
             
             try:
-                if existing_row and row_index:
+                if existing_row and row_index and not st.session_state["force_clear"]:
                     try:
                         hishob_ws.update(f"A{row_index}:T{row_index}", [row_data])
                     except:
@@ -210,6 +239,11 @@ if st.session_state["logged_in"]:
                     hishob_ws.append_row(row_data)
                     st.balloons()
                     st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
+                
+                # ⚡ सेव्ह केल्यावर कॅशे (Memory) क्लिअर करणे, जेणेकरून नवीन डेटा लगेच रिपोर्टमध्ये दिसेल
+                fetch_all_records.clear()
+                st.session_state["force_clear"] = False
+                
             except Exception as e:
                 st.error(f"⚠️ सेव्ह करताना अडचण आली: {e}")
 
@@ -217,7 +251,8 @@ if st.session_state["logged_in"]:
     with tab2:
         st.markdown('<div class="sub-title" style="margin-bottom:10px;">🔍 ॲडव्हान्स अहवाल (Advanced Reports)</div>', unsafe_allow_html=True)
         
-        all_data = hishob_ws.get_all_records()
+        # ⚡ फास्ट कॅशेमधून डेटा वाचणे
+        all_data = fetch_all_records(hishob_ws)
         df = pd.DataFrame(all_data)
         
         if not df.empty:
@@ -313,7 +348,22 @@ if st.session_state["logged_in"]:
                     
                     st.markdown(html_table, unsafe_allow_html=True)
                     st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    # ==========================================
+                    # 📊 नवीन फीचर: डॅशबोर्ड ग्राफ (Visual Chart)
+                    # ==========================================
+                    st.markdown("### 📊 कामाचा आलेख (Dashboard Chart)")
+                    chart_df = df_report.copy()
+                    if report_type == "संपूर्ण हिशोब (डिटेल)":
+                        # 'इतर कमाई' वगळून चार्ट बनवणे
+                        chart_df = chart_df[chart_df["तपशील (काम)"] != "इतर कमाई"]
+                        st.bar_chart(data=chart_df, x="तपशील (काम)", y="एकूण रक्कम (₹)")
+                    else:
+                        st.bar_chart(data=chart_df, x="तपशील (काम)", y="एकूण संख्या")
 
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # --- डाऊनलोड आणि प्रिंट ---
                     col_d1, col_d2 = st.columns(2)
                     
                     with col_d1:
@@ -405,15 +455,14 @@ if st.session_state["logged_in"]:
                         st.download_button(label="🖨️ रिपोर्ट प्रिंट / PDF काढा", data=print_html, file_name="Print_Report.html", mime="text/html", use_container_width=True)
 
                     # ==========================================
-                    # ५. नवीन फीचर: सुरक्षित डेटाबेस बॅकअप (AutoFilter सह)
+                    # सुरक्षित डेटाबेस बॅकअप (AutoFilter सह)
                     # ==========================================
                     st.markdown("---")
                     st.markdown('<div class="sub-title" style="margin-bottom:10px;">📦 सुरक्षित डेटाबेस बॅकअप</div>', unsafe_allow_html=True)
                     st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
                     
-                    # डेटा तारखेनुसार क्रमाने (Sort) लावणे
                     backup_df = df.copy()
-                    backup_df = backup_df.sort_values(by='तारीख', ascending=True) # जुन्या तारखेपासून नवीन तारखेपर्यंत
+                    backup_df = backup_df.sort_values(by='तारीख', ascending=True) 
                     backup_df['तारीख'] = backup_df['तारीख'].dt.strftime('%d-%m-%Y')
                     
                     output_backup = io.BytesIO()
@@ -430,7 +479,6 @@ if st.session_state["logged_in"]:
                         for col_num, value in enumerate(backup_df.columns.values):
                             worksheet_b.write(0, col_num, value, header_fmt_b)
                             
-                        # ऑटो-फिल्टर (AutoFilter) लावण्याची कमांड
                         max_row = len(backup_df)
                         max_col = len(backup_df.columns) - 1
                         worksheet_b.autofilter(0, 0, max_row, max_col)
