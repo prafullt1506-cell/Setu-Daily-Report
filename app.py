@@ -15,6 +15,8 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Poppins:wght@400;600;800&display=swap');
     html, body, [class*="css"] { font-family: 'Mukta', 'Poppins', sans-serif; }
     
+    /* डार्क मोड / लाईट मोड प्रॉब्लेम फिक्स करण्यासाठी .stApp चे बॅकग्राऊंड काढले आहे */
+    
     .main-title { font-size: 38px; font-weight: 800; text-align: center; margin-bottom: 5px; color: #1e3a8a; }
     .sub-title { text-align: center; font-size: 16px; color: #475569; margin-bottom: 25px; font-weight: 600; }
     
@@ -200,8 +202,11 @@ if st.session_state["logged_in"]:
                 filtered_df = df[(df['तारीख'].dt.date >= start_date) & (df['तारीख'].dt.date <= end_date)]
             elif filter_type == "विशिष्ट महिना":
                 months = ["जानेवारी", "फेब्रुवारी", "मार्च", "एप्रिल", "मे", "जून", "जुलै", "ऑगस्ट", "सप्टेंबर", "ऑक्टोबर", "नोव्हेंबर", "डिसेंबर"]
-                with col_f1: sel_month = months.index(st.selectbox("महिना निवडा:", months)) + 1
-                with col_f2: sel_year = st.selectbox("वर्ष निवडा:", range(2024, 2030))
+                with col_f1: 
+                    sel_month_name = st.selectbox("महिना निवडा:", months)
+                    sel_month = months.index(sel_month_name) + 1
+                with col_f2: 
+                    sel_year = st.selectbox("वर्ष निवडा:", range(2024, 2030))
                 filtered_df = df[(df['तारीख'].dt.month == sel_month) & (df['तारीख'].dt.year == sel_year)]
             elif filter_type == "विशिष्ट वर्ष":
                 sel_year = st.selectbox("वर्ष निवडा:", range(2024, 2030))
@@ -216,7 +221,7 @@ if st.session_state["logged_in"]:
                 
                 if report_type == "फक्त दाखल्यांची संख्या":
                     cols_to_check = list(rates.keys())
-                    cols_to_check.remove("स्कॅन पेजेस") # स्कॅन पेजेस आणि इतर कमाई यात नको
+                    cols_to_check.remove("स्कॅन पेजेस") 
                     
                     for col in cols_to_check:
                         if col in filtered_df.columns:
@@ -244,6 +249,18 @@ if st.session_state["logged_in"]:
                 if report_list:
                     df_report = pd.DataFrame(report_list)
                     
+                    # रिपोर्टच्या कालावधीचे नाव तयार करणे (Excel आणि PDF दोन्हीसाठी)
+                    if filter_type == "विशिष्ट तारीख":
+                        date_str = f"दिनांक: {sel_date.strftime('%d-%m-%Y')}"
+                    elif filter_type == "दोन तारखांच्या दरम्यान":
+                        date_str = f"कालावधी: {start_date.strftime('%d-%m-%Y')} ते {end_date.strftime('%d-%m-%Y')}"
+                    elif filter_type == "विशिष्ट महिना":
+                        date_str = f"महिना: {sel_month_name} {sel_year}"
+                    elif filter_type == "विशिष्ट वर्ष":
+                        date_str = f"वर्ष: {sel_year}"
+                    else:
+                        date_str = "संपूर्ण डेटा (सर्व रेकॉर्ड्स)"
+
                     # स्क्रीनवर दाखवण्यासाठी HTML Table
                     st.markdown("---")
                     st.markdown(f"### 📋 रिपोर्ट प्रीव्ह्यू")
@@ -269,55 +286,42 @@ if st.session_state["logged_in"]:
                     # --- डाऊनलोड आणि प्रिंट ---
                     col_d1, col_d2 = st.columns(2)
                     
-                   with col_d1:
+                    with col_d1:
                         # --- 🌟 प्रिमियम उभी (Vertical) Excel फाईल ---
                         output = io.BytesIO()
                         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                            df_report.to_excel(writer, index=False, sheet_name='Report', startrow=3) # टेबल ३ऱ्या ओळीपासून सुरू होईल
+                            df_report.to_excel(writer, index=False, sheet_name='Report', startrow=3)
                             workbook = writer.book
                             worksheet = writer.sheets['Report']
                             worksheet.set_paper(9) # A4 Size
                             worksheet.set_portrait() # उभी प्रिंट
                             
-                            # १. रिपोर्टच्या कालावधीचे नाव तयार करणे
-                            if filter_type == "विशिष्ट तारीख":
-                                date_str = f"दिनांक: {sel_date.strftime('%d-%m-%Y')}"
-                            elif filter_type == "दोन तारखांच्या दरम्यान":
-                                date_str = f"कालावधी: {start_date.strftime('%d-%m-%Y')} ते {end_date.strftime('%d-%m-%Y')}"
-                            elif filter_type == "विशिष्ट महिना":
-                                date_str = f"महिना: {sel_month_name} {sel_year}"
-                            elif filter_type == "विशिष्ट वर्ष":
-                                date_str = f"वर्ष: {sel_year}"
-                            else:
-                                date_str = "संपूर्ण डेटा (सर्व रेकॉर्ड्स)"
-
-                            # २. फॉन्ट आणि डिझाईन सेटिंग्ज (मोठे आणि ठळक)
+                            # फॉन्ट आणि डिझाईन सेटिंग्ज
                             title_format = workbook.add_format({'bold': True, 'font_size': 16, 'font_name': 'Arial', 'align': 'center', 'valign': 'vcenter', 'color': '#1e3a8a'})
                             date_format = workbook.add_format({'bold': True, 'font_size': 12, 'font_name': 'Arial', 'align': 'center', 'valign': 'vcenter', 'color': '#475569'})
                             
                             header_format = workbook.add_format({'bold': True, 'font_size': 13, 'font_name': 'Arial', 'bg_color': '#1e3a8a', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
                             cell_format = workbook.add_format({'font_size': 12, 'font_name': 'Arial', 'border': 1, 'align': 'center', 'valign': 'vcenter'})
-                            cell_left_format = workbook.add_format({'font_size': 12, 'font_name': 'Arial', 'border': 1, 'align': 'left', 'valign': 'vcenter'}) # नावासाठी डावीकडे
+                            cell_left_format = workbook.add_format({'font_size': 12, 'font_name': 'Arial', 'border': 1, 'align': 'left', 'valign': 'vcenter'})
                             
-                            # ३. टायटल आणि तारीख एक्सेलमध्ये टाकणे
+                            # टायटल आणि तारीख
                             worksheet.merge_range('A1:D1', "🏛️ स्मार्ट सेतू केंद्र - हिशोब अहवाल", title_format)
                             worksheet.merge_range('A2:D2', date_str, date_format)
-                            worksheet.set_row(0, 30) # टायटलची उंची
-                            worksheet.set_row(1, 20) # तारखेची उंची
-                            worksheet.set_row(2, 10) # थोडी मोकळी जागा
+                            worksheet.set_row(0, 30)
+                            worksheet.set_row(1, 20)
+                            worksheet.set_row(2, 10)
                             
-                            # ४. कॉलमची रुंदी आणि ओळींची उंची वाढवणे
-                            worksheet.set_column('A:A', 30, cell_left_format) # कामाचे नाव मोठा कॉलम
-                            worksheet.set_column('B:D', 18, cell_format) # बाकीचे कॉलम्स
+                            # कॉलमची रुंदी आणि ओळींची उंची
+                            worksheet.set_column('A:A', 30, cell_left_format)
+                            worksheet.set_column('B:D', 18, cell_format)
                             
-                            # हेडिंग्ज आणि डेटा लिहिणे
                             for col_num, value in enumerate(df_report.columns.values):
                                 worksheet.write(3, col_num, value, header_format)
                             
-                            for row_num in range(len(df_report) + 4): # सर्व ओळींची उंची वाढवणे
+                            for row_num in range(len(df_report) + 4):
                                 worksheet.set_row(row_num, 22)
                                 
-                            # ५. एकूण कमाई (Total) ची स्टाईल
+                            # एकूण कमाई (Total)
                             if report_type == "संपूर्ण हिशोब (डिटेल)":
                                 last_row = len(df_report) + 4
                                 total_format = workbook.add_format({'bold': True, 'font_size': 14, 'font_name': 'Arial', 'bg_color': '#f1f5f9', 'border': 1, 'align': 'right', 'valign': 'vcenter'})
@@ -325,13 +329,13 @@ if st.session_state["logged_in"]:
                                 
                                 worksheet.merge_range(last_row, 0, last_row, 2, "एकूण कमाई:", total_format)
                                 worksheet.write(last_row, 3, f"₹ {grand_total_calc}", total_amt_format)
-                                worksheet.set_row(last_row, 28) # टोटलच्या ओळीची उंची अजून मोठी
+                                worksheet.set_row(last_row, 28)
 
                         excel_data = output.getvalue()
                         st.download_button(label="📥 A4 उभी Excel डाऊनलोड", data=excel_data, file_name="Smart_Setu_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                     
                     with col_d2:
-                        # 100% खात्रीशीर PDF / Print HTML फाईल डाऊनलोड सिस्टीम (No Blank Page Error!)
+                        # 100% खात्रीशीर PDF / Print HTML फाईल डाऊनलोड
                         print_html = f"""
                         <!DOCTYPE html>
                         <html>
@@ -340,8 +344,9 @@ if st.session_state["logged_in"]:
                             <meta charset="utf-8">
                             <style>
                                 body {{ font-family: Arial, sans-serif; padding: 40px; color: #333; }}
-                                h2 {{ text-align: center; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; }}
-                                table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                                h2 {{ text-align: center; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; margin-bottom: 5px; }}
+                                .date-text {{ text-align: center; font-size: 16px; color: #555; margin-bottom: 20px; font-weight: bold; }}
+                                table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
                                 th {{ background-color: #f2f2f2; color: #333; font-weight: bold; padding: 12px; text-align: left; border: 1px solid #ddd; }}
                                 td {{ padding: 10px; border: 1px solid #ddd; font-size: 15px; }}
                                 .total-row {{ font-weight: bold; background-color: #e2e8f0; font-size: 18px; }}
@@ -349,7 +354,8 @@ if st.session_state["logged_in"]:
                             </style>
                         </head>
                         <body onload="window.print()">
-                            <h2>🏛️ स्मार्ट सेतू केंद्र - अहवाल</h2>
+                            <h2>🏛️ स्मार्ट सेतू केंद्र - हिशोब अहवाल</h2>
+                            <div class="date-text">{date_str}</div>
                             <table>
                                 <tr>
                         """
@@ -375,7 +381,7 @@ if st.session_state["logged_in"]:
                             """
                         print_html += "</table><br><p style='text-align:center; color:#777; font-size:12px;'>* This is a computer generated report.</p></body></html>"
                         
-                        # थेट फाईल डाऊनलोड (Chrome ब्लॉक करणार नाही)
+                        # थेट फाईल डाऊनलोड
                         st.download_button(label="🖨️ रिपोर्ट प्रिंट / PDF काढा", data=print_html, file_name="Print_Report.html", mime="text/html", use_container_width=True)
 
                 else:
