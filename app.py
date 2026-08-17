@@ -70,14 +70,13 @@ def fetch_all_records(_ws):
     return _ws.get_all_records()
 
 # ==========================================
-# ३. सिक्युरिटी आणि स्टेट मॅनेजमेंट (Bug Fixes)
+# ३. सिक्युरिटी आणि स्टेट मॅनेजमेंट
 # ==========================================
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 if "current_user" not in st.session_state:
     st.session_state["current_user"] = ""
 
-# 🔥 हे नवीन 'form_key' ॲड केले आहे, ज्यामुळे मागची तारीख निवडल्यावर जुने आकडे मिक्स होणार नाहीत!
 if "form_key" not in st.session_state:
     st.session_state["form_key"] = 0
 if "force_clear" not in st.session_state:
@@ -133,7 +132,6 @@ else:
             date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
             date_str = str(date_today)
             
-            # तारीख बदलली की फॉर्म रिसेट करणे (Mix-up थांबवण्यासाठी)
             if date_str != st.session_state["last_date"]:
                 st.session_state["force_clear"] = False
                 st.session_state["form_key"] += 1
@@ -143,13 +141,15 @@ else:
             existing_row = None
             row_index = None
             
+            # तारीख आधीच आहे का ते चेक करणे
             for i, record in enumerate(all_records):
                 if str(record.get("तारीख")) == date_str:
                     existing_row = record
                     row_index = i + 2 
                     break
             
-            if existing_row and not st.session_state["force_clear"]:
+            # 🔥 बदल: 'force_clear' असलं तरीही बटण नेहमी 'अपडेट'च राहील जर तारीख आधीच सेव्ह असेल
+            if existing_row:
                 st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे. तुम्ही तो खाली बदलू (Edit) शकता.")
                 btn_label = "💾 हिशोब अपडेट करा (Update)"
             else:
@@ -165,7 +165,6 @@ else:
                         return 0
                 return 0
 
-            # 🔥 प्रत्येक बॉक्सला 'key' दिलंय, जेणेकरून जुने आकडे त्यात अडकून राहणार नाहीत
             fk = st.session_state["form_key"]
             
             with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹८०)", expanded=True):
@@ -232,7 +231,8 @@ else:
                     v13, v14, v15, v16, v17, grand_total
                 ]
                 try:
-                    if existing_row and row_index and not st.session_state["force_clear"]:
+                    # 🔥 सर्वात मोठा बदल: 'existing_row' असेल तर नेहमी UPDATE च होईल (force_clear असो वा नसो)
+                    if existing_row and row_index:
                         try:
                             hishob_ws.update(f"A{row_index}:T{row_index}", [row_data])
                         except:
@@ -464,7 +464,7 @@ else:
 
                     st.markdown("---")
                     st.markdown('<div class="sub-title" style="margin-bottom:10px;">📦 सुरक्षित डेटाबेस बॅकअप</div>', unsafe_allow_html=True)
-                    st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
+                    st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला ছুটি आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
                     
                     backup_df = df.copy()
                     backup_df = backup_df.sort_values(by='तारीख', ascending=True) 
