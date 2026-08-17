@@ -70,13 +70,16 @@ def fetch_all_records(_ws):
     return _ws.get_all_records()
 
 # ==========================================
-# ३. सिक्युरिटी सिस्टीम (Login)
+# ३. सिक्युरिटी आणि स्टेट मॅनेजमेंट (Bug Fixes)
 # ==========================================
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 if "current_user" not in st.session_state:
     st.session_state["current_user"] = ""
 
+# 🔥 हे नवीन 'form_key' ॲड केले आहे, ज्यामुळे मागची तारीख निवडल्यावर जुने आकडे मिक्स होणार नाहीत!
+if "form_key" not in st.session_state:
+    st.session_state["form_key"] = 0
 if "force_clear" not in st.session_state:
     st.session_state["force_clear"] = False
 if "last_date" not in st.session_state:
@@ -130,8 +133,10 @@ else:
             date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
             date_str = str(date_today)
             
+            # तारीख बदलली की फॉर्म रिसेट करणे (Mix-up थांबवण्यासाठी)
             if date_str != st.session_state["last_date"]:
                 st.session_state["force_clear"] = False
+                st.session_state["form_key"] += 1
                 st.session_state["last_date"] = date_str
             
             all_records = fetch_all_records(hishob_ws)
@@ -160,44 +165,46 @@ else:
                         return 0
                 return 0
 
+            # 🔥 प्रत्येक बॉक्सला 'key' दिलंय, जेणेकरून जुने आकडे त्यात अडकून राहणार नाहीत
+            fk = st.session_state["form_key"]
+            
             with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹८०)", expanded=True):
                 c1, c2 = st.columns(2)
                 with c1:
-                    v1 = st.number_input("उत्पन्नाचा दाखला", min_value=0, step=1, value=get_val("उत्पन्नाचा"))
-                    v2 = st.number_input("वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1, value=get_val("वय/अधिवास"))
-                    v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1, value=get_val("अल्पभूधारक"))
-                    v4 = st.number_input("जातीचा दाखला", min_value=0, step=1, value=get_val("जातीचा"))
-                    v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1, value=get_val("EWS"))
-                    v6 = st.number_input("वारसा दाखला", min_value=0, step=1, value=get_val("वारसा"))
+                    v1 = st.number_input("उत्पन्नाचा दाखला", min_value=0, step=1, value=get_val("उत्पन्नाचा"), key=f"v1_{fk}")
+                    v2 = st.number_input("वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1, value=get_val("वय/अधिवास"), key=f"v2_{fk}")
+                    v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1, value=get_val("अल्पभूधारक"), key=f"v3_{fk}")
+                    v4 = st.number_input("जातीचा दाखला", min_value=0, step=1, value=get_val("जातीचा"), key=f"v4_{fk}")
+                    v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1, value=get_val("EWS"), key=f"v5_{fk}")
+                    v6 = st.number_input("वारसा दाखला", min_value=0, step=1, value=get_val("वारसा"), key=f"v6_{fk}")
                 with c2:
-                    v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1, value=get_val("नॉन-क्रिमीलेअर"))
-                    v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1, value=get_val("ज्येष्ठ नागरिक"))
-                    v9 = st.number_input("डोंगरी दाखला", min_value=0, step=1, value=get_val("डोंगरी"))
-                    v10 = st.number_input("रहिवासी दाखला", min_value=0, step=1, value=get_val("रहिवासी"))
-                    v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"))
-                    v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"))
+                    v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1, value=get_val("नॉन-क्रिमीलेअर"), key=f"v7_{fk}")
+                    v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1, value=get_val("ज्येष्ठ नागरिक"), key=f"v8_{fk}")
+                    v9 = st.number_input("डोंगरी दाखला", min_value=0, step=1, value=get_val("डोंगरी"), key=f"v9_{fk}")
+                    v10 = st.number_input("रहिवासी दाखला", min_value=0, step=1, value=get_val("रहिवासी"), key=f"v10_{fk}")
+                    v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"), key=f"v11_{fk}")
+                    v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"), key=f"v12_{fk}")
                 
                 mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 80
 
             with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
-                v13 = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"))
+                v13 = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"), key=f"v13_{fk}")
                 affidavit_rs = v13 * 80
 
             with st.expander("📁 ३. रेशन कार्ड कामे [दर: ₹६९]"):
-                v14 = st.number_input("नाव कमी करणे", min_value=0, step=1, value=get_val("रेशन नाव कमी"))
-                v15 = st.number_input("नाव दाखल करणे", min_value=0, step=1, value=get_val("रेशन नाव दाखल"))
+                v14 = st.number_input("नाव कमी करणे", min_value=0, step=1, value=get_val("रेशन नाव कमी"), key=f"v14_{fk}")
+                v15 = st.number_input("नाव दाखल करणे", min_value=0, step=1, value=get_val("रेशन नाव दाखल"), key=f"v15_{fk}")
                 ration_rs = (v14 + v15) * 69
 
             with st.expander("📁 ४. स्कॅनिंग [दर: ₹२ / पेज]"):
-                v16 = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1, value=get_val("स्कॅन पेजेस"))
+                v16 = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1, value=get_val("स्कॅन पेजेस"), key=f"v16_{fk}")
                 scan_rs = v16 * 2
 
             with st.expander("📁 ५. इतर किरकोळ कमाई"):
-                v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"))
+                v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"), key=f"v17_{fk}")
 
             grand_total = mahsul_rs + affidavit_rs + ration_rs + scan_rs + v17
             
-            # स्पष्ट समजण्यासाठी टायटल बदलले
             date_label_text = "आजची" if date_str == str(datetime.date.today()) else f"{datetime.datetime.strptime(date_str, '%Y-%m-%d').strftime('%d-%m-%Y')} ची"
 
             st.markdown(f'''
@@ -215,6 +222,7 @@ else:
 
             if clear_clicked:
                 st.session_state["force_clear"] = True
+                st.session_state["form_key"] += 1
                 st.rerun()
 
             if save_clicked:
@@ -237,6 +245,8 @@ else:
                     
                     fetch_all_records.clear()
                     st.session_state["force_clear"] = False
+                    st.session_state["form_key"] += 1
+                    st.rerun()
                     
                 except Exception as e:
                     st.error(f"⚠️ सेव्ह करताना अडचण आली: {e}")
@@ -250,7 +260,6 @@ else:
         if not df.empty:
             df['तारीख'] = pd.to_datetime(df['तारीख'])
             
-            # 🔥 सगळ्यात महत्त्वाचा बदल: 'विशिष्ट तारीख' बाय-डिफॉल्ट सेट केली आहे (म्हणजे फक्त आजचा डेटा आधी दिसेल)
             filter_type = st.selectbox("📅 रिपोर्टचा कालावधी निवडा:", 
                                        ["विशिष्ट तारीख", "दोन तारखांच्या दरम्यान", "विशिष्ट महिना", "विशिष्ट वर्ष", "सर्व डेटा"])
             
