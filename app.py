@@ -140,7 +140,6 @@ if st.session_state["logged_in"]:
         else:
             btn_label = "💾 हिशोब गुगल शीटमध्ये सेव्ह करा"
 
-        # जुने आकडे भरणे (जर असतील तर)
         def get_val(col_name):
             if existing_row:
                 try:
@@ -200,18 +199,14 @@ if st.session_state["logged_in"]:
                 v13, v14, v15, v16, v17, grand_total
             ]
             
-            # एडिट अपडेट करणे किंवा नवीन जोडणे
             try:
                 if existing_row and row_index:
-                    # जुनी ओळ अपडेट करणे
                     try:
                         hishob_ws.update(f"A{row_index}:T{row_index}", [row_data])
                     except:
-                        # काही gspread versions साठी पर्यायी पद्धत
                         hishob_ws.update(values=[row_data], range_name=f"A{row_index}:T{row_index}")
                     st.success("✅ रेकॉर्ड यशस्वीरित्या अपडेट झाला!")
                 else:
-                    # नवीन ओळ जोडणे
                     hishob_ws.append_row(row_data)
                     st.balloons()
                     st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
@@ -408,6 +403,40 @@ if st.session_state["logged_in"]:
                         print_html += "</table><br><p style='text-align:center; color:#777; font-size:12px;'>* This is a computer generated report.</p></body></html>"
                         
                         st.download_button(label="🖨️ रिपोर्ट प्रिंट / PDF काढा", data=print_html, file_name="Print_Report.html", mime="text/html", use_container_width=True)
+
+                    # ==========================================
+                    # ५. नवीन फीचर: सुरक्षित डेटाबेस बॅकअप (AutoFilter सह)
+                    # ==========================================
+                    st.markdown("---")
+                    st.markdown('<div class="sub-title" style="margin-bottom:10px;">📦 सुरक्षित डेटाबेस बॅकअप</div>', unsafe_allow_html=True)
+                    st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
+                    
+                    # डेटा तारखेनुसार क्रमाने (Sort) लावणे
+                    backup_df = df.copy()
+                    backup_df = backup_df.sort_values(by='तारीख', ascending=True) # जुन्या तारखेपासून नवीन तारखेपर्यंत
+                    backup_df['तारीख'] = backup_df['तारीख'].dt.strftime('%d-%m-%Y')
+                    
+                    output_backup = io.BytesIO()
+                    with pd.ExcelWriter(output_backup, engine='xlsxwriter') as writer:
+                        backup_df.to_excel(writer, index=False, sheet_name='Raw_Backup')
+                        workbook_b = writer.book
+                        worksheet_b = writer.sheets['Raw_Backup']
+                        
+                        header_fmt_b = workbook_b.add_format({'bold': True, 'font_size': 12, 'font_name': 'Mukta', 'bg_color': '#1e3a8a', 'font_color': 'white', 'border': 1})
+                        cell_fmt_b = workbook_b.add_format({'font_size': 11, 'font_name': 'Mukta', 'border': 1, 'align': 'center'})
+                        
+                        worksheet_b.set_column('A:T', 15, cell_fmt_b)
+                        
+                        for col_num, value in enumerate(backup_df.columns.values):
+                            worksheet_b.write(0, col_num, value, header_fmt_b)
+                            
+                        # ऑटो-फिल्टर (AutoFilter) लावण्याची कमांड
+                        max_row = len(backup_df)
+                        max_col = len(backup_df.columns) - 1
+                        worksheet_b.autofilter(0, 0, max_row, max_col)
+                        
+                    backup_data = output_backup.getvalue()
+                    st.download_button(label="📥 संपूर्ण डेटाबेस डाऊनलोड करा (Excel Backup)", data=backup_data, file_name="Smart_Setu_Full_Backup.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
 
                 else:
                     st.info("या कालावधीत कोणतेही दाखले काढलेले नाहीत.")
