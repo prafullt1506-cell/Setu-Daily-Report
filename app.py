@@ -4,10 +4,9 @@ import datetime
 import io
 import json
 import gspread
-import base64
 
 # ==========================================
-# १. ॲपची सेटिंग आणि डिझाईन
+# १. ॲपची सेटिंग आणि ॲडव्हान्स डिझाईन (Premium UI)
 # ==========================================
 st.set_page_config(page_title="स्मार्ट सेतू हिशोब", page_icon="🏛️", layout="centered")
 
@@ -15,17 +14,31 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Poppins:wght@400;600;800&display=swap');
     html, body, [class*="css"] { font-family: 'Mukta', 'Poppins', sans-serif; }
-    .stApp { background: linear-gradient(180deg, var(--background-color) 0%, rgba(59, 130, 246, 0.05) 100%); }
-    .main-title { font-size: 38px; font-weight: 800; text-align: center; margin-bottom: 5px; color: var(--text-color); }
-    .sub-title { text-align: center; font-size: 16px; color: #6B7280; margin-bottom: 25px; font-weight: 600;}
-    .grand-total-card { background: linear-gradient(135deg, #10B981, #047857); color: white; padding: 25px; border-radius: 15px; text-align: center; margin-top: 10px; margin-bottom: 20px;}
+    .stApp { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
+    
+    .main-title { font-size: 38px; font-weight: 800; text-align: center; margin-bottom: 5px; color: #1e3a8a; }
+    .sub-title { text-align: center; font-size: 16px; color: #475569; margin-bottom: 25px; font-weight: 600; }
+    
+    .grand-total-card { 
+        background: linear-gradient(135deg, #059669, #047857); 
+        color: white; padding: 25px; border-radius: 16px; text-align: center; 
+        margin-top: 15px; margin-bottom: 20px; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
     .grand-total-text { font-size: 45px; font-weight: 800; margin: 0; line-height: 1.1;}
-    .grand-total-label { font-size: 18px; opacity: 0.9; margin-bottom: 5px; font-weight: 600; }
+    .grand-total-label { font-size: 18px; opacity: 0.95; margin-bottom: 5px; font-weight: 600; }
+
+    /* Report Table Styling */
+    .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .report-table th { background-color: #1e3a8a; color: white; padding: 12px; text-align: left; font-size: 16px; }
+    .report-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155; font-size: 15px; font-weight: 600;}
+    .report-table tr:last-child td { border-bottom: none; }
+    .report-total-row { background-color: #f1f5f9; font-weight: 800 !important; color: #0f172a !important; font-size: 18px !important; }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# २. गुगल शीट कनेक्शन (Database Setup)
+# २. गुगल शीट कनेक्शन
 # ==========================================
 def connect_to_gsheet():
     try:
@@ -34,13 +47,9 @@ def connect_to_gsheet():
             creds_data = creds_data[0]
             
         gc = gspread.service_account_from_dict(creds_data)
-        
-        # ⚠️ तुमची गुगल शीटची लिंक
         sheet_url = "https://docs.google.com/spreadsheets/d/1CV9oR3fEs1zEtAjvN2jZ_z3wONW2ghKJ4pzsne9MK_0/edit?gid=0#gid=0" 
-        
         sh = gc.open_by_url(sheet_url)
         return sh
-        
     except Exception as e:
         st.error(f"⚠️ गुगल शीट कनेक्ट करताना एरर आला. Secrets तपासा. Error: {e}")
         st.stop()
@@ -54,11 +63,10 @@ def init_db(sh):
                    "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
                    "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल", "स्कॅन पेजेस", "इतर कमाई", "एकूण रक्कम"]
         hishob_ws.append_row(headers)
-    
     return hishob_ws
 
 # ==========================================
-# ३. सिक्युरिटी सिस्टीम (Username & Password Login)
+# ३. सिक्युरिटी सिस्टीम (Login)
 # ==========================================
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
@@ -67,23 +75,16 @@ if "current_user" not in st.session_state:
 
 st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
 
-# 🔒 इथे तुम्ही ग्राहकांचे Username (ID) आणि त्यांचे Password (PIN) सेट करून ठेवू शकता!
 AUTHORIZED_USERS = {
     "setuknk": "2026",
-    
 }
 
-# --- लॉगिन स्क्रीन ---
 if not st.session_state["logged_in"]:
-    st.markdown('<div class="sub-title">सुरक्षित लॉगिन (Secure Login)</div>', unsafe_allow_html=True)
-    
+    st.markdown('<div class="sub-title">🔐 सुरक्षित लॉगिन (Secure Login)</div>', unsafe_allow_html=True)
     with st.container():
-        # आता ईमेल ऐवजी युझरनेम (Username) विचारेल
-        login_username = st.text_input("तुमचा युझरनेम किंवा ID टाका:")
-        login_password = st.text_input("तुमचा पासवर्ड किंवा PIN टाका:", type="password")
-        
-        if st.button("लॉगिन करा (Login)", type="primary", use_container_width=True):
-            # Username डिक्शनरीमध्ये आहे का आणि Password मॅच होतोय का हे चेक करणे
+        login_username = st.text_input("👤 तुमचा युझरनेम किंवा ID टाका:")
+        login_password = st.text_input("🔑 तुमचा पासवर्ड किंवा PIN टाका:", type="password")
+        if st.button("🚀 लॉगिन करा (Login)", type="primary", use_container_width=True):
             if login_username in AUTHORIZED_USERS and AUTHORIZED_USERS[login_username] == login_password:
                 st.session_state["logged_in"] = True
                 st.session_state["current_user"] = login_username
@@ -92,24 +93,34 @@ if not st.session_state["logged_in"]:
                 st.error("❌ चुकीचा युझरनेम किंवा पासवर्ड! प्रवेश नाकारला.")
 
 # ==========================================
-# ४. मुख्य हिशोब ॲप (लॉगिन झाल्यानंतर)
+# ४. मुख्य हिशोब ॲप
 # ==========================================
 if st.session_state["logged_in"]:
-    st.markdown(f'<div class="sub-title">स्वागत आहे! ({st.session_state["current_user"]})</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="sub-title">👋 स्वागत आहे! ({st.session_state["current_user"]})</div>', unsafe_allow_html=True)
     
-    if st.button("🚪 लॉग आउट करा (Logout)"):
-        st.session_state["logged_in"] = False
-        st.session_state["current_user"] = ""
-        st.rerun()
+    col_x1, col_x2 = st.columns([4, 1])
+    with col_x2:
+        if st.button("🚪 लॉग आउट"):
+            st.session_state["logged_in"] = False
+            st.session_state["current_user"] = ""
+            st.rerun()
 
     tab1, tab2 = st.tabs(["📝 आजचा हिशोब भरा", "📊 अहवाल आणि रिपोर्ट"])
     
     sh = connect_to_gsheet()
     hishob_ws = init_db(sh)
 
-    # --- टॅब १: हिशोब भरणे ---
+    # --- दर पत्रक (Rates) ---
+    rates = {
+        "उत्पन्नाचा": 80, "वय/अधिवास": 80, "अल्पभूधारक": 80, "जातीचा": 80, "EWS": 80,
+        "वारसा": 80, "नॉन-क्रिमीलेअर": 80, "ज्येष्ठ नागरिक": 80, "डोंगरी": 80, "रहिवासी": 80, "शेतकरी": 80, "संजय गांधी": 80,
+        "प्रतिज्ञापत्रे": 80,
+        "रेशन नाव कमी": 69, "रेशन नाव दाखल": 69,
+        "स्कॅन पेजेस": 2
+    }
+
     with tab1:
-        date_today = st.date_input("तारीख निवडा:", datetime.date.today())
+        date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
         
         with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹८०)", expanded=True):
             c1, c2 = st.columns(2)
@@ -165,7 +176,7 @@ if st.session_state["logged_in"]:
             st.balloons()
             st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
 
-  # --- टॅब २: रिपोर्टिंग आणि ॲडव्हान्स फिल्टर ---
+    # --- टॅब २: रिपोर्टिंग आणि ॲडव्हान्स फिल्टर ---
     with tab2:
         st.markdown('<div class="sub-title" style="margin-bottom:10px;">🔍 ॲडव्हान्स अहवाल (Advanced Reports)</div>', unsafe_allow_html=True)
         
@@ -175,7 +186,6 @@ if st.session_state["logged_in"]:
         if not df.empty:
             df['तारीख'] = pd.to_datetime(df['तारीख'])
             
-            # १. ॲडव्हान्स फिल्टरिंग
             filter_type = st.selectbox("📅 रिपोर्टचा कालावधी निवडा:", 
                                        ["सर्व डेटा", "विशिष्ट तारीख", "दोन तारखांच्या दरम्यान", "विशिष्ट महिना", "विशिष्ट वर्ष"])
             
@@ -185,128 +195,158 @@ if st.session_state["logged_in"]:
             if filter_type == "विशिष्ट तारीख":
                 sel_date = st.date_input("तारीख निवडा:")
                 filtered_df = df[df['तारीख'].dt.date == sel_date]
-                
             elif filter_type == "दोन तारखांच्या दरम्यान":
                 with col_f1: start_date = st.date_input("सुरुवातीची तारीख:")
                 with col_f2: end_date = st.date_input("शेवटची तारीख:")
                 filtered_df = df[(df['तारीख'].dt.date >= start_date) & (df['तारीख'].dt.date <= end_date)]
-                
             elif filter_type == "विशिष्ट महिना":
                 months = ["जानेवारी", "फेब्रुवारी", "मार्च", "एप्रिल", "मे", "जून", "जुलै", "ऑगस्ट", "सप्टेंबर", "ऑक्टोबर", "नोव्हेंबर", "डिसेंबर"]
-                with col_f1:
-                    sel_month_name = st.selectbox("महिना निवडा:", months)
-                    sel_month = months.index(sel_month_name) + 1
-                with col_f2:
-                    sel_year = st.selectbox("वर्ष निवडा:", range(2024, 2030))
+                with col_f1: sel_month = months.index(st.selectbox("महिना निवडा:", months)) + 1
+                with col_f2: sel_year = st.selectbox("वर्ष निवडा:", range(2024, 2030))
                 filtered_df = df[(df['तारीख'].dt.month == sel_month) & (df['तारीख'].dt.year == sel_year)]
-                
             elif filter_type == "विशिष्ट वर्ष":
                 sel_year = st.selectbox("वर्ष निवडा:", range(2024, 2030))
                 filtered_df = df[df['तारीख'].dt.year == sel_year]
 
-            # [नवीन बदल] २. रिपोर्टचा प्रकार निवडणे
-            report_type = st.radio("📊 रिपोर्टचा प्रकार:", ["संपूर्ण हिशोब (रक्कमेसहित)", "फक्त दाखल्यांची संख्या"], horizontal=True)
+            report_type = st.radio("📊 रिपोर्टचा प्रकार:", ["संपूर्ण हिशोब (डिटेल)", "फक्त दाखल्यांची संख्या"], horizontal=True)
 
-            # ३. रिपोर्ट कॅल्क्युलेशन
             if not filtered_df.empty:
-                total_kamai = filtered_df['एकूण रक्कम'].sum() if 'एकूण रक्कम' in filtered_df.columns else 0
+                # डायनॅमिक रिपोर्ट डेटा तयार करणे
+                report_list = []
+                grand_total_calc = 0
                 
-                # जर 'फक्त दाखल्यांची संख्या' निवडले असेल
                 if report_type == "फक्त दाखल्यांची संख्या":
-                    cols_to_sum = ["उत्पन्नाचा", "वय/अधिवास", "अल्पभूधारक", "जातीचा", "EWS", 
-                                   "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
-                                   "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल"]
+                    cols_to_check = list(rates.keys())
+                    cols_to_check.remove("स्कॅन पेजेस") # स्कॅन पेजेस आणि इतर कमाई यात नको
                     
-                    # Excel मधून पैशांचे कॉलम्स काढणे
-                    cols_to_drop = ["स्कॅन पेजेस", "इतर कमाई", "एकूण रक्कम", "युजर"]
-                    df_for_excel = filtered_df.drop(columns=[col for col in cols_to_drop if col in filtered_df.columns])
-                    
-                    header_title = "📋 रिपोर्ट (फक्त दाखल्यांची संख्या)"
-                    summary_html = "" 
-                
-                # जर 'संपूर्ण हिशोब' निवडले असेल
+                    for col in cols_to_check:
+                        if col in filtered_df.columns:
+                            count = filtered_df[col].sum()
+                            if count > 0:
+                                report_list.append({"तपशील (काम)": col, "एकूण संख्या": count})
                 else:
-                    cols_to_sum = ["उत्पन्नाचा", "वय/अधिवास", "अल्पभूधारक", "जातीचा", "EWS", 
-                                   "वारसा", "नॉन-क्रिमीलेअर", "ज्येष्ठ नागरिक", "डोंगरी", "रहिवासी", "शेतकरी", 
-                                   "संजय गांधी", "प्रतिज्ञापत्रे", "रेशन नाव कमी", "रेशन नाव दाखल", "स्कॅन पेजेस", "इतर कमाई"]
-                    df_for_excel = filtered_df.copy()
-                    header_title = f"📋 रिपोर्ट (एकूण कमाई: ₹ {total_kamai})"
-                    summary_html = f'<div class="summary">एकूण कमाई: ₹ {total_kamai}</div>'
-                
-                report_data = {}
-                for col in cols_to_sum:
-                    if col in filtered_df.columns:
-                        total_val = filtered_df[col].sum()
-                        if total_val > 0: 
-                            report_data[col] = total_val
-                
-                st.markdown("---")
-                
-                # ४. उभा आणि ठळक (Vertical) रिपोर्ट लूक (कच्च्या कोडचा एरर फिक्स केलाय)
-                st.markdown(f"### {header_title}")
-                
-                if report_data:
-                    html_report = '<div style="background-color:#F3F4F6; padding:15px; border-radius:10px;">'
-                    for item, count in report_data.items():
-                        val_str = f"₹ {count}" if item == "इतर कमाई" else f"{count}"
-                        html_report += f'<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #E5E7EB; padding: 10px 0;"><span style="font-size: 18px; font-weight: 600; color: #374151;">📄 {item}</span><span style="font-size: 20px; font-weight: 800; color: #111827;">{val_str}</span></div>'
-                    html_report += '</div>'
-                    st.markdown(html_report, unsafe_allow_html=True)
+                    # संपूर्ण हिशोब (डिटेल - गुणाकारासहित)
+                    all_cols = list(rates.keys()) + ["इतर कमाई"]
+                    for col in all_cols:
+                        if col in filtered_df.columns:
+                            count = filtered_df[col].sum()
+                            if count > 0:
+                                if col == "इतर कमाई":
+                                    total_amt = count
+                                    report_list.append({"तपशील (काम)": col, "संख्या": "-", "दर": "-", "एकूण रक्कम (₹)": total_amt})
+                                    grand_total_calc += total_amt
+                                else:
+                                    rate = rates[col]
+                                    total_amt = count * rate
+                                    report_list.append({"तपशील (काम)": col, "संख्या": count, "दर": f"₹ {rate}", "एकूण रक्कम (₹)": total_amt})
+                                    grand_total_calc += total_amt
+
+                # रिपोर्ट प्रिंट करण्यासाठी HTML बनवणे
+                if report_list:
+                    df_report = pd.DataFrame(report_list)
+                    
+                    # स्क्रीनवर दाखवण्यासाठी HTML Table
+                    st.markdown("---")
+                    st.markdown(f"### 📋 रिपोर्ट प्रीव्ह्यू")
+                    
+                    html_table = "<table class='report-table'><tr>"
+                    for col_name in df_report.columns:
+                        html_table += f"<th>{col_name}</th>"
+                    html_table += "</tr>"
+                    
+                    for _, row in df_report.iterrows():
+                        html_table += "<tr>"
+                        for val in row:
+                            html_table += f"<td>{val}</td>"
+                        html_table += "</tr>"
+                        
+                    if report_type == "संपूर्ण हिशोब (डिटेल)":
+                        html_table += f"<tr class='report-total-row'><td colspan='3' style='text-align:right;'>एकूण कमाई:</td><td>₹ {grand_total_calc}</td></tr>"
+                    html_table += "</table>"
+                    
+                    st.markdown(html_table, unsafe_allow_html=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # --- डाऊनलोड आणि प्रिंट ---
+                    col_d1, col_d2 = st.columns(2)
+                    
+                    with col_d1:
+                        # उभी (Vertical) Excel फाईल
+                        output = io.BytesIO()
+                        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                            df_report.to_excel(writer, index=False, sheet_name='Report')
+                            workbook = writer.book
+                            worksheet = writer.sheets['Report']
+                            worksheet.set_paper(9) # A4
+                            worksheet.set_portrait() # उभी (Vertical)
+                            
+                            header_format = workbook.add_format({'bold': True, 'font_size': 12, 'bg_color': '#1e3a8a', 'font_color': 'white', 'border': 1})
+                            cell_format = workbook.add_format({'font_size': 11, 'border': 1})
+                            
+                            worksheet.set_column('A:A', 25, cell_format)
+                            worksheet.set_column('B:D', 15, cell_format)
+                            
+                            for col_num, value in enumerate(df_report.columns.values):
+                                worksheet.write(0, col_num, value, header_format)
+                                
+                            if report_type == "संपूर्ण हिशोब (डिटेल)":
+                                last_row = len(df_report) + 1
+                                total_format = workbook.add_format({'bold': True, 'font_size': 12, 'bg_color': '#f1f5f9', 'border': 1, 'align': 'right'})
+                                worksheet.merge_range(last_row, 0, last_row, 2, "एकूण कमाई:", total_format)
+                                worksheet.write(last_row, 3, f"₹ {grand_total_calc}", total_format)
+
+                        excel_data = output.getvalue()
+                        st.download_button(label="📥 A4 उभी Excel डाऊनलोड", data=excel_data, file_name="Smart_Setu_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                    
+                    with col_d2:
+                        # 100% खात्रीशीर PDF / Print HTML फाईल डाऊनलोड सिस्टीम (No Blank Page Error!)
+                        print_html = f"""
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>स्मार्ट सेतू अहवाल</title>
+                            <meta charset="utf-8">
+                            <style>
+                                body {{ font-family: Arial, sans-serif; padding: 40px; color: #333; }}
+                                h2 {{ text-align: center; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; }}
+                                table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                                th {{ background-color: #f2f2f2; color: #333; font-weight: bold; padding: 12px; text-align: left; border: 1px solid #ddd; }}
+                                td {{ padding: 10px; border: 1px solid #ddd; font-size: 15px; }}
+                                .total-row {{ font-weight: bold; background-color: #e2e8f0; font-size: 18px; }}
+                                .total-row td {{ padding: 15px; }}
+                            </style>
+                        </head>
+                        <body onload="window.print()">
+                            <h2>🏛️ स्मार्ट सेतू केंद्र - अहवाल</h2>
+                            <table>
+                                <tr>
+                        """
+                        # Headers
+                        for col_name in df_report.columns:
+                            print_html += f"<th>{col_name}</th>"
+                        print_html += "</tr>"
+                        
+                        # Data Rows
+                        for _, row in df_report.iterrows():
+                            print_html += "<tr>"
+                            for val in row:
+                                print_html += f"<td>{val}</td>"
+                            print_html += "</tr>"
+                            
+                        # Total Row
+                        if report_type == "संपूर्ण हिशोब (डिटेल)":
+                            print_html += f"""
+                            <tr class='total-row'>
+                                <td colspan='3' style='text-align: right;'>एकूण कमाई:</td>
+                                <td>₹ {grand_total_calc}</td>
+                            </tr>
+                            """
+                        print_html += "</table><br><p style='text-align:center; color:#777; font-size:12px;'>* This is a computer generated report.</p></body></html>"
+                        
+                        # थेट फाईल डाऊनलोड (Chrome ब्लॉक करणार नाही)
+                        st.download_button(label="🖨️ रिपोर्ट प्रिंट / PDF काढा", data=print_html, file_name="Print_Report.html", mime="text/html", use_container_width=True)
+
                 else:
                     st.info("या कालावधीत कोणतेही दाखले काढलेले नाहीत.")
-
-                st.markdown("<br>", unsafe_allow_html=True)
-
-                # ५. डाऊनलोड आणि प्रिंट (PDF) पर्याय
-                col_d1, col_d2 = st.columns(2)
-                
-                with col_d1:
-                    # Excel
-                    df_for_excel['तारीख'] = df_for_excel['तारीख'].dt.strftime('%d-%m-%Y')
-                    output = io.BytesIO()
-                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                        df_for_excel.to_excel(writer, index=False, sheet_name='Report')
-                        workbook = writer.book
-                        worksheet = writer.sheets['Report']
-                        worksheet.set_paper(9)
-                        worksheet.center_horizontally()
-                        header_format = workbook.add_format({'bold': True, 'bg_color': '#D3D3D3', 'border': 1})
-                        for col_num, value in enumerate(df_for_excel.columns.values):
-                            worksheet.write(0, col_num, value, header_format)
-                    excel_data = output.getvalue()
-                    st.download_button(label="📊 Excel डाउनलोड करा", data=excel_data, file_name="Smart_Setu_Report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
-                
-                with col_d2:
-                    # PDF / Print 
-                    print_html = f"""
-                    <html>
-                    <head>
-                        <title>स्मार्ट सेतू हिशोब</title>
-                        <style>
-                            body {{ font-family: Arial, sans-serif; padding: 20px; }}
-                            h2 {{ text-align: center; color: #333; }}
-                            .summary {{ text-align: center; font-size: 18px; margin-bottom: 20px; font-weight: bold; padding: 10px; background: #e0f2fe; border-radius: 8px;}}
-                            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-                            th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 16px;}}
-                            th {{ background-color: #f2f2f2; }}
-                        </style>
-                    </head>
-                    <body onload="window.print()">
-                        <h2>🏛️ स्मार्ट सेतू अहवाल</h2>
-                        {summary_html}
-                        <table>
-                            <tr><th>दाखल्याचा प्रकार / काम</th><th>संख्या / रक्कम</th></tr>
-                    """
-                    for item, count in report_data.items():
-                        val_str = f"₹ {count}" if item == "इतर कमाई" else count
-                        print_html += f"<tr><td>{item}</td><td><b>{val_str}</b></td></tr>"
-                    print_html += "</table></body></html>"
-                    
-                    b64 = base64.b64encode(print_html.encode('utf-8')).decode('utf-8')
-                    href = f'<a href="data:text/html;base64,{b64}" target="_blank" style="display: block; text-align: center; background-color: #EF4444; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-top: 2px;">🖨️ PDF / प्रिंट काढा</a>'
-                    st.markdown(href, unsafe_allow_html=True)
-
             else:
                 st.warning("या कालावधीसाठी कोणताही डेटा उपलब्ध नाही. 🤷‍♂️")
-        else:
-            st.warning("कोणताही डेटा उपलब्ध नाही. आधी हिशोब भरा!")
