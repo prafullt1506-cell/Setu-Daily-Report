@@ -375,32 +375,31 @@ else:
                         if chart_data:
                             clean_chart_df = pd.DataFrame(chart_data)
                             
-                            # 🔥 फिक्स १: बार ग्राफ (दाखल्यांची संख्या) + वेगवेगळे रंग आणि 'आडवा स्लायडर' (Scroll)
+                            # 🔥 फिक्स १: 'दाखल्यांची संख्या' ग्राफ. 'use_container_width=False' आणि मोठी width (800) दिल्यामुळे आता खाली 'आडवा स्लायडर' येईल.
                             st.markdown("**📈 दाखल्यांची संख्या**")
                             bar_df = clean_chart_df[clean_chart_df["एकूण संख्या"] > 0]
-                            bar_chart = alt.Chart(bar_df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-                                x=alt.X('तपशील (काम)', type='nominal', sort='-y', title="", axis=alt.Axis(labelAngle=-45, labelOverlap=False)),
-                                y=alt.Y('एकूण संख्या', type='quantitative', title="संख्या"),
-                                color=alt.Color('तपशील (काम)', type='nominal', scale=alt.Scale(scheme='category20'), legend=None),
+                            bar_chart = alt.Chart(bar_df).mark_bar(size=30, cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+                                x=alt.X('तपशील (काम):N', sort='-y', title="", axis=alt.Axis(labelAngle=-45, labelOverlap=False)),
+                                y=alt.Y('एकूण संख्या:Q', title="संख्या"),
+                                color=alt.Color('तपशील (काम):N', scale=alt.Scale(scheme='tableau20'), legend=None),
                                 tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण संख्या", title="संख्या")]
-                            ).properties(height=280, width=800).interactive(bind_y=False) 
-                            # use_container_width=False केल्याने खाली आडवा स्लायडर येईल!
-                            st.altair_chart(bar_chart, use_container_width=False)
+                            ).properties(height=300, width=800).interactive() # interactive() ने झूम आणि पॅन पुन्हा चालू होईल
                             
-                            # 🔥 फिक्स २: डोनट चार्ट (कमाईची रक्कम) + वेगवेगळे रंग आणि 'आडवा स्लायडर' (Scroll)
+                            st.altair_chart(bar_chart, use_container_width=False) # False केल्यामुळे खाली आडवा स्क्रोलबार येईल
+                            
+                            # 🔥 फिक्स २: 'कमाईचा डोनट चार्ट'. लेजंड उजवीकडे (right) घेतल्यामुळे गोल मोठा दिसेल.
                             st.markdown("**🍩 कमाईची विभागणी (₹)**")
                             pie_chart = alt.Chart(clean_chart_df).mark_arc(
                                 innerRadius=50,         
                                 stroke="#ffffff",       
-                                strokeWidth=2,        
-                                cornerRadius=4          
+                                strokeWidth=1.5
                             ).encode(
                                 theta=alt.Theta(field="एकूण रक्कम (₹)", type="quantitative"),
-                                color=alt.Color(field="तपशील (काम)", type="nominal", scale=alt.Scale(scheme='category20'), legend=alt.Legend(title="कामाचा प्रकार", orient="bottom", columns=2)),
+                                color=alt.Color(field="तपशील (काम):N", scale=alt.Scale(scheme='tableau20'), legend=alt.Legend(title="कामाचा प्रकार", orient="right")),
                                 tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण रक्कम (₹)", title="रक्कम (₹)")]
-                            ).properties(height=380, width=800).interactive(bind_y=False)
-                            # use_container_width=False केल्याने खाली आडवा स्लायडर येईल!
-                            st.altair_chart(pie_chart, use_container_width=False)
+                            ).properties(height=300)
+                            
+                            st.altair_chart(pie_chart, use_container_width=True)
 
                     st.markdown("---")
 
