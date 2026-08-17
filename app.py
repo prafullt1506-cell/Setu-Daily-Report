@@ -288,7 +288,6 @@ else:
                 report_list = []
                 grand_total_calc = 0
                 
-                # टेबलसाठी डेटा तयार करणे
                 if report_type == "फक्त दाखल्यांची संख्या":
                     cols_to_check = list(rates.keys())
                     cols_to_check.remove("स्कॅन पेजेस") 
@@ -353,7 +352,6 @@ else:
                     with col_view2:
                         st.markdown("### 📊 कामाचा आलेख (Dashboard)")
                         
-                        # 🔥 नवीन आणि फिक्स केलेला चार्ट डेटा (फक्त चार्ट्ससाठी)
                         chart_data = []
                         for col in rates.keys(): 
                             if col in filtered_df.columns:
@@ -365,7 +363,6 @@ else:
                                         "एकूण रक्कम (₹)": int(count * rates[col])
                                     })
                         
-                        # 'इतर कमाई' फक्त पैशांमध्ये दाखवण्यासाठी
                         if "इतर कमाई" in filtered_df.columns:
                             itar = filtered_df["इतर कमाई"].sum()
                             if itar > 0:
@@ -378,29 +375,29 @@ else:
                         if chart_data:
                             clean_chart_df = pd.DataFrame(chart_data)
                             
-                            # १. Bar Chart: फक्त दाखल्यांची संख्या (Count)
+                            # 🔥 फिक्स १: 'दाखल्यांची संख्या' ग्राफ आता इंटरॲक्टिव्ह आणि स्वतंत्र रंगात आहे
                             st.markdown("**📈 दाखल्यांची संख्या**")
                             bar_df = clean_chart_df[clean_chart_df["एकूण संख्या"] > 0]
                             bar_chart = alt.Chart(bar_df).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
                                 x=alt.X('तपशील (काम)', sort='-y', title=""),
                                 y=alt.Y('एकूण संख्या', title="संख्या"),
-                                color=alt.Color('तपशील (काम)', legend=None),
+                                color=alt.Color('तपशील (काम)', scale=alt.Scale(scheme='category20'), legend=None),
                                 tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण संख्या", title="संख्या")]
-                            ).properties(height=280)
+                            ).properties(height=280).interactive()
                             st.altair_chart(bar_chart, use_container_width=True)
                             
-                            # २. Premium Donut Chart: एकूण रक्कम (Amount)
+                            # 🔥 फिक्स २: 'कमाईचा डोनट चार्ट' आता इंटरॲक्टिव्ह आणि स्वतंत्र रंगात आहे
                             st.markdown("**🍩 कमाईची विभागणी (₹)**")
                             pie_chart = alt.Chart(clean_chart_df).mark_arc(
-                                innerRadius=65,         # मधली मोकळी जागा
-                                stroke="#ffffff",       # पांढरी लाईन
-                                strokeWidth=2.5,        # लाईनची जाडी
-                                cornerRadius=4          # 3D सारखे गोलाकार कोपरे
+                                innerRadius=65,         
+                                stroke="#ffffff",       
+                                strokeWidth=2.5,        
+                                cornerRadius=4          
                             ).encode(
                                 theta=alt.Theta(field="एकूण रक्कम (₹)", type="quantitative"),
-                                color=alt.Color(field="तपशील (काम)", type="nominal", legend=alt.Legend(title="कामाचा प्रकार", orient="bottom")),
+                                color=alt.Color(field="तपशील (काम)", type="nominal", scale=alt.Scale(scheme='category20'), legend=alt.Legend(title="कामाचा प्रकार", orient="bottom")),
                                 tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण रक्कम (₹)", title="रक्कम (₹)")]
-                            ).properties(height=350)
+                            ).properties(height=350).interactive()
                             st.altair_chart(pie_chart, use_container_width=True)
 
                     st.markdown("---")
