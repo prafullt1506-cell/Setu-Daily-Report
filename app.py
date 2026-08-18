@@ -16,15 +16,36 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Poppins:wght@400;600;800&display=swap');
     html, body, [class*="css"] { font-family: 'Mukta', 'Poppins', sans-serif; }
     
-    /* ॲडव्हान्स टायटल विथ ग्रेडियंट कलर */
-    .main-title { 
-        font-size: 42px; font-weight: 800; text-align: center; margin-bottom: 5px; 
-        background: -webkit-linear-gradient(45deg, #1e3a8a, #3b82f6); 
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+    /* 🔥 नवीन: ॲपचा प्रीमियम बॅकग्राउंड (Soft Mesh Gradient) */
+    .stApp {
+        background: radial-gradient(circle at 10% 20%, rgba(219, 234, 254, 0.5) 0%, transparent 20%),
+                    radial-gradient(circle at 90% 80%, rgba(224, 231, 255, 0.5) 0%, transparent 20%),
+                    linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     }
+
+    /* 🔥 नवीन: खरा 'लोगो' (Logo Badge with Shine Animation) */
+    .logo-container {
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);
+        padding: 10px 30px; border-radius: 50px; width: fit-content; margin: 0 auto 5px auto;
+        box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.15), inset 0 0 0 1px rgba(255,255,255,0.8);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        transition: transform 0.3s ease;
+    }
+    .logo-container:hover { transform: scale(1.02); }
+    .logo-icon { font-size: 40px; margin-right: 15px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15)); }
+    .logo-text {
+        font-size: 38px; font-weight: 800; margin: 0; line-height: 1.2;
+        background: linear-gradient(120deg, #1e3a8a, #3b82f6, #1e3a8a);
+        background-size: 200% auto;
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        animation: shine 3s linear infinite;
+    }
+    @keyframes shine { to { background-position: 200% center; } }
+    
     .sub-title { text-align: center; font-size: 16px; color: #64748b; margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; }
     
-    /* 🔥 3D Premium Grand Total Card */
+    /* 3D Premium Grand Total Card */
     .grand-total-card { 
         background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%); 
         color: white; padding: 30px; border-radius: 20px; text-align: center; 
@@ -32,14 +53,11 @@ st.markdown("""
         box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .grand-total-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 25px -5px rgba(14, 165, 233, 0.5);
-    }
+    .grand-total-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(14, 165, 233, 0.5); }
     .grand-total-text { font-size: 50px; font-weight: 800; margin: 0; line-height: 1.1; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
     .grand-total-label { font-size: 18px; opacity: 0.9; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
 
-    /* ॲडव्हान्स टेबल (होव्हर इफेक्टसह) */
+    /* ॲडव्हान्स टेबल */
     .report-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 5px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
     .report-table th { background: linear-gradient(90deg, #1e3a8a, #2563eb); color: white; padding: 15px; text-align: left; font-size: 16px; font-weight: 600; }
     .report-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 15px; font-weight: 600; transition: background 0.2s; }
@@ -48,38 +66,22 @@ st.markdown("""
     .report-total-row { background: linear-gradient(90deg, #f8fafc, #f1f5f9); font-weight: 800 !important; color: #0f172a !important; font-size: 18px !important; }
     
     .pie-scroll-box {
-        overflow: auto;
-        max-height: 550px;
-        white-space: nowrap;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 16px;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.6);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05);
-        margin-top: 10px;
-        transition: transform 0.3s ease;
+        overflow: auto; max-height: 550px; white-space: nowrap;
+        border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 20px;
+        background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05); margin-top: 10px; transition: transform 0.3s ease;
     }
     .pie-scroll-box:hover { transform: translateY(-3px); }
     
-    /* 🔥 3D Glassmorphism KPI Cards (मस्त बाऊन्सी इफेक्ट) */
+    /* 3D Glassmorphism KPI Cards */
     .kpi-container { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
     .kpi-card { 
-        flex: 1; 
-        background: rgba(255, 255, 255, 0.9); 
-        backdrop-filter: blur(12px);
-        border-radius: 16px; 
-        padding: 25px; 
-        text-align: center; 
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); 
-        border: 1px solid rgba(255,255,255,0.5);
-        border-bottom: 5px solid #1e3a8a; 
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        flex: 1; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px);
+        border-radius: 16px; padding: 25px; text-align: center; 
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.5);
+        border-bottom: 5px solid #1e3a8a; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
     }
-    .kpi-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-    }
+    .kpi-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
     .kpi-card.green { border-bottom-color: #10b981; }
     .kpi-card.orange { border-bottom-color: #f97316; }
     .kpi-title { font-size: 16px; color: #64748b; font-weight: 600; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;}
@@ -138,10 +140,18 @@ if "force_clear" not in st.session_state:
 if "last_date" not in st.session_state:
     st.session_state["last_date"] = str(datetime.date.today())
 
+# 🔥 वारंवार वापरला जाणारा लोगो HTML (Login आणि Main App दोन्हीकडे)
+logo_html = '''
+<div class="logo-container">
+    <div class="logo-icon">🏛️</div>
+    <div class="logo-text">स्मार्ट सेतू हिशोब</div>
+</div>
+'''
+
 if not st.session_state["logged_in"]:
     col_l1, col_login, col_l3 = st.columns([1, 2, 1])
     with col_login:
-        st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
+        st.markdown(logo_html, unsafe_allow_html=True)
         st.markdown('<div class="sub-title">🔐 सुरक्षित लॉगिन (Secure Login)</div>', unsafe_allow_html=True)
         AUTHORIZED_USERS = {"setuknk": "2026"}
         login_username = st.text_input("👤 तुमचा युझरनेम किंवा ID टाका:")
@@ -165,7 +175,7 @@ else:
             st.session_state["current_user"] = ""
             st.rerun()
 
-    st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
+    st.markdown(logo_html, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
     tab1, tab2 = st.tabs(["📝 आजचा हिशोब भरा", "📊 अहवाल आणि रिपोर्ट"])
@@ -569,7 +579,7 @@ else:
 
                     st.markdown("---")
                     st.markdown('<div class="sub-title" style="margin-bottom:10px;">📦 सुरक्षित डेटाबेस बॅकअप</div>', unsafe_allow_html=True)
-                    st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला অ্যাক्टिव्ह आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
+                    st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
                     
                     backup_df = df.copy()
                     backup_df = backup_df.sort_values(by='तारीख', ascending=True) 
