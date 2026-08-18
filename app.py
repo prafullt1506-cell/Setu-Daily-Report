@@ -16,48 +16,78 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Poppins:wght@400;600;800&display=swap');
     html, body, [class*="css"] { font-family: 'Mukta', 'Poppins', sans-serif; }
     
-    .main-title { font-size: 38px; font-weight: 800; text-align: center; margin-bottom: 5px; color: #1e3a8a; }
-    .sub-title { text-align: center; font-size: 16px; color: #475569; margin-bottom: 25px; font-weight: 600; }
-    
-    .grand-total-card { 
-        background: linear-gradient(135deg, #059669, #047857); 
-        color: white; padding: 25px; border-radius: 16px; text-align: center; 
-        margin-top: 15px; margin-bottom: 20px; 
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    /* ॲडव्हान्स टायटल विथ ग्रेडियंट कलर */
+    .main-title { 
+        font-size: 42px; font-weight: 800; text-align: center; margin-bottom: 5px; 
+        background: -webkit-linear-gradient(45deg, #1e3a8a, #3b82f6); 
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
     }
-    .grand-total-text { font-size: 45px; font-weight: 800; margin: 0; line-height: 1.1;}
-    .grand-total-label { font-size: 18px; opacity: 0.95; margin-bottom: 5px; font-weight: 600; }
+    .sub-title { text-align: center; font-size: 16px; color: #64748b; margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; }
+    
+    /* 🔥 3D Premium Grand Total Card */
+    .grand-total-card { 
+        background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%); 
+        color: white; padding: 30px; border-radius: 20px; text-align: center; 
+        margin-top: 15px; margin-bottom: 25px; 
+        box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .grand-total-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(14, 165, 233, 0.5);
+    }
+    .grand-total-text { font-size: 50px; font-weight: 800; margin: 0; line-height: 1.1; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+    .grand-total-label { font-size: 18px; opacity: 0.9; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
 
-    /* Report Table Styling */
-    .report-table { width: 100%; border-collapse: collapse; margin-top: 5px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    .report-table th { background-color: #1e3a8a; color: white; padding: 12px; text-align: left; font-size: 16px; }
-    .report-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155; font-size: 15px; font-weight: 600;}
+    /* ॲडव्हान्स टेबल (होव्हर इफेक्टसह) */
+    .report-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 5px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
+    .report-table th { background: linear-gradient(90deg, #1e3a8a, #2563eb); color: white; padding: 15px; text-align: left; font-size: 16px; font-weight: 600; }
+    .report-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 15px; font-weight: 600; transition: background 0.2s; }
+    .report-table tr:hover td { background-color: #f8fafc; }
     .report-table tr:last-child td { border-bottom: none; }
-    .report-total-row { background-color: #f1f5f9; font-weight: 800 !important; color: #0f172a !important; font-size: 18px !important; }
+    .report-total-row { background: linear-gradient(90deg, #f8fafc, #f1f5f9); font-weight: 800 !important; color: #0f172a !important; font-size: 18px !important; }
     
     .pie-scroll-box {
         overflow: auto;
         max-height: 550px;
         white-space: nowrap;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 15px;
-        background-color: #f8fafc;
-        margin-top: 10px;
-    }
-    
-    /* 🔥 नवीन: लाईव्ह स्मार्ट पावतीची डिझाईन */
-    .receipt-box {
-        background: white;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 16px;
         padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-        border-top: 6px solid #1e3a8a;
-        margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05);
+        margin-top: 10px;
+        transition: transform 0.3s ease;
     }
-    .receipt-title { font-size: 20px; font-weight: 800; color: #1e3a8a; text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 10px; margin-bottom: 15px; }
-    .receipt-item { display: flex; justify-content: space-between; font-size: 15px; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; color: #334155; font-weight: 600; }
-    .receipt-total { display: flex; justify-content: space-between; font-size: 22px; font-weight: 800; padding-top: 15px; margin-top: 10px; border-top: 2px solid #cbd5e1; color: #059669; }
+    .pie-scroll-box:hover { transform: translateY(-3px); }
+    
+    /* 🔥 3D Glassmorphism KPI Cards (मस्त बाऊन्सी इफेक्ट) */
+    .kpi-container { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
+    .kpi-card { 
+        flex: 1; 
+        background: rgba(255, 255, 255, 0.9); 
+        backdrop-filter: blur(12px);
+        border-radius: 16px; 
+        padding: 25px; 
+        text-align: center; 
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); 
+        border: 1px solid rgba(255,255,255,0.5);
+        border-bottom: 5px solid #1e3a8a; 
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    }
+    .kpi-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    }
+    .kpi-card.green { border-bottom-color: #10b981; }
+    .kpi-card.orange { border-bottom-color: #f97316; }
+    .kpi-title { font-size: 16px; color: #64748b; font-weight: 600; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;}
+    .kpi-value { font-size: 34px; color: #0f172a; font-weight: 800; background: -webkit-linear-gradient(45deg, #0f172a, #334155); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
+    
+    /* बटणांसाठी ॲडव्हान्स होव्हर इफेक्ट */
+    .stButton > button { transition: all 0.3s ease !important; border-radius: 8px !important; }
+    .stButton > button:hover { transform: translateY(-3px) !important; box-shadow: 0 6px 15px rgba(0,0,0,0.1) !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -127,15 +157,16 @@ else:
     # ==========================================
     # ४. मुख्य हिशोब ॲप
     # ==========================================
-    st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="sub-title">👋 स्वागत आहे! ({st.session_state["current_user"]})</div>', unsafe_allow_html=True)
-    
-    col_x1, col_x2 = st.columns([6, 1])
-    with col_x2:
+    with st.sidebar:
+        st.markdown(f"### 👋 स्वागत आहे! <br> **({st.session_state['current_user']})**", unsafe_allow_html=True)
+        st.markdown("---")
         if st.button("🚪 लॉग आउट", use_container_width=True):
             st.session_state["logged_in"] = False
             st.session_state["current_user"] = ""
             st.rerun()
+
+    st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
     tab1, tab2 = st.tabs(["📝 आजचा हिशोब भरा", "📊 अहवाल आणि रिपोर्ट"])
     
@@ -150,10 +181,8 @@ else:
     }
 
     with tab1:
-        # 🔥 बदल: डावीकडे फॉर्म (फॉर्मची जागा मोठी) आणि उजवीकडे पावती (Receipt)
-        col_form, col_receipt = st.columns([1.8, 1], gap="large")
-        
-        with col_form:
+        col_t1_space1, col_t1_main, col_t1_space2 = st.columns([1, 4, 1])
+        with col_t1_main:
             date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
             date_str = str(date_today)
             
@@ -173,10 +202,10 @@ else:
                     break
             
             if existing_row:
-                st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे.")
-                btn_label = "💾 हिशोब अपडेट करा"
+                st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे. तुम्ही तो खाली बदलू (Edit) शकता.")
+                btn_label = "💾 हिशोब अपडेट करा (Update)"
             else:
-                btn_label = "💾 हिशोब सेव्ह करा"
+                btn_label = "💾 हिशोब गुगल शीटमध्ये सेव्ह करा"
 
             def get_val(col_name):
                 if st.session_state["force_clear"]:
@@ -206,6 +235,8 @@ else:
                     v10 = st.number_input("🏡 रहिवासी दाखला", min_value=0, step=1, value=get_val("रहिवासी"), key=f"v10_{fk}")
                     v11 = st.number_input("🚜 शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"), key=f"v11_{fk}")
                     v12 = st.number_input("👵 संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"), key=f"v12_{fk}")
+                
+                mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 69
 
             with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
                 v13 = st.number_input("⚖️ एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"), key=f"v13_{fk}")
@@ -220,59 +251,21 @@ else:
                 v17 = st.number_input("💵 थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"), key=f"v17_{fk}")
 
             grand_total = ((v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 69) + (v13 * 80) + (v16 * 2) + v17
+            
+            date_label_text = "आजची" if date_str == str(datetime.date.today()) else f"{datetime.datetime.strptime(date_str, '%Y-%m-%d').strftime('%d-%m-%Y')} ची"
 
-        # 🔥 नवीन: उजवीकडे 'लाईव्ह स्मार्ट पावती' (Live Receipt)
-        with col_receipt:
-            st.markdown("<br>", unsafe_allow_html=True) # वरून थोडी जागा
-            
-            # पावती बनवणे
-            receipt_items = []
-            if v1 > 0: receipt_items.append(("उत्पन्नाचा दाखला", v1, v1 * 69))
-            if v2 > 0: receipt_items.append(("वय/अधिवास", v2, v2 * 69))
-            if v3 > 0: receipt_items.append(("अल्पभूधारक", v3, v3 * 69))
-            if v4 > 0: receipt_items.append(("जातीचा दाखला", v4, v4 * 69))
-            if v5 > 0: receipt_items.append(("EWS प्रमाणपत्र", v5, v5 * 69))
-            if v6 > 0: receipt_items.append(("वारसा दाखला", v6, v6 * 69))
-            if v7 > 0: receipt_items.append(("नॉन-क्रिमीलेअर", v7, v7 * 69))
-            if v8 > 0: receipt_items.append(("ज्येष्ठ नागरिक", v8, v8 * 69))
-            if v9 > 0: receipt_items.append(("डोंगरी दाखला", v9, v9 * 69))
-            if v10 > 0: receipt_items.append(("रहिवासी दाखला", v10, v10 * 69))
-            if v11 > 0: receipt_items.append(("शेतकरी दाखला", v11, v11 * 69))
-            if v12 > 0: receipt_items.append(("संजय गांधी", v12, v12 * 69))
-            if v13 > 0: receipt_items.append(("प्रतिज्ञापत्रे", v13, v13 * 80))
-            if v16 > 0: receipt_items.append(("स्कॅनिंग (पेजेस)", v16, v16 * 2))
-            if v17 > 0: receipt_items.append(("इतर कमाई", "-", v17))
-
-            # HTML पावती डिझाईन
-            receipt_html = f'''
-            <div class="receipt-box">
-                <div class="receipt-title">🧾 आजचा हिशोब (पावती)</div>
-            '''
-            
-            if not receipt_items:
-                receipt_html += "<div style='text-align:center; color:#94a3b8; font-size:14px; padding:20px 0;'>अजून कोणताही दाखला भरलेला नाही...</div>"
-            else:
-                for item_name, count, amt in receipt_items:
-                    count_str = f"x {count}" if count != "-" else ""
-                    receipt_html += f'''
-                    <div class="receipt-item">
-                        <span>{item_name} <span style="color:#94a3b8; font-size:13px; margin-left:5px;">{count_str}</span></span>
-                        <span>₹ {amt}</span>
-                    </div>
-                    '''
-            
-            receipt_html += f'''
-                <div class="receipt-total">
-                    <span>एकूण रक्कम</span>
-                    <span>₹ {grand_total}</span>
-                </div>
+            st.markdown(f'''
+            <div class="grand-total-card">
+                <div class="grand-total-label">💰 {date_label_text} एकूण कमाई</div>
+                <div class="grand-total-text">₹ {grand_total}</div>
             </div>
-            '''
-            st.markdown(receipt_html, unsafe_allow_html=True)
+            ''', unsafe_allow_html=True)
 
-            # सेव्ह आणि क्लिअर बटणे पावतीच्या खाली!
-            save_clicked = st.button(btn_label, use_container_width=True, type="primary")
-            clear_clicked = st.button("🧹 सर्व आकडे पुसा (Clear)", use_container_width=True)
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                save_clicked = st.button(btn_label, use_container_width=True, type="primary")
+            with col_btn2:
+                clear_clicked = st.button("🧹 सर्व आकडे पुसा (Clear)", use_container_width=True)
 
             if clear_clicked:
                 st.session_state["force_clear"] = True
@@ -294,13 +287,12 @@ else:
                         st.toast('✅ रेकॉर्ड यशस्वीरित्या अपडेट झाला!', icon='🎉')
                     else:
                         hishob_ws.append_row(row_data)
-                        st.balloons() # 🎈 फुगे येतील!
+                        st.balloons()
                         st.toast('✅ रेकॉर्ड गुगल शीटमध्ये सेव्ह झाला!', icon='🎉')
                     
                     fetch_all_records.clear()
                     st.session_state["force_clear"] = False
                     st.session_state["form_key"] += 1
-                    # st.rerun() # Toast दिसावा म्हणून rerun थोडा वेळ थांबवू शकतो, पण लगेच केला तरी चालतो.
                     
                 except Exception as e:
                     st.error(f"⚠️ सेव्ह करताना अडचण आली: {e}")
@@ -342,9 +334,46 @@ else:
             report_type = st.radio("📊 रिपोर्टचा प्रकार:", ["संपूर्ण हिशोब (डिटेल)", "फक्त दाखल्यांची संख्या"], horizontal=True)
 
             if not filtered_df.empty:
+                total_income_val = 0
+                total_certs_val = 0
+                top_cert_name = "काहीही नाही"
+                top_cert_count = 0
+                
                 report_list = []
                 grand_total_calc = 0
                 
+                cert_counts = {}
+                for col in rates.keys():
+                    if col != "स्कॅन पेजेस" and col in filtered_df.columns:
+                        c_sum = filtered_df[col].sum()
+                        if c_sum > 0:
+                            cert_counts[col] = c_sum
+                            total_certs_val += c_sum
+                
+                if cert_counts:
+                    top_cert_name = max(cert_counts, key=cert_counts.get)
+                    top_cert_count = cert_counts[top_cert_name]
+                
+                if "एकूण रक्कम" in filtered_df.columns:
+                    total_income_val = filtered_df["एकूण रक्कम"].sum()
+
+                st.markdown(f'''
+                <div class="kpi-container">
+                    <div class="kpi-card green">
+                        <div class="kpi-title">💰 एकूण कमाई</div>
+                        <div class="kpi-value">₹ {int(total_income_val):,}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">📄 एकूण दाखले (नग)</div>
+                        <div class="kpi-value">{int(total_certs_val)}</div>
+                    </div>
+                    <div class="kpi-card orange">
+                        <div class="kpi-title">🔥 टॉप दाखला</div>
+                        <div class="kpi-value">{top_cert_name} <span style="font-size:16px;">({int(top_cert_count)})</span></div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+
                 if report_type == "फक्त दाखल्यांची संख्या":
                     cols_to_check = list(rates.keys())
                     if "स्कॅन पेजेस" in cols_to_check:
@@ -540,7 +569,7 @@ else:
 
                     st.markdown("---")
                     st.markdown('<div class="sub-title" style="margin-bottom:10px;">📦 सुरक्षित डेटाबेस बॅकअप</div>', unsafe_allow_html=True)
-                    st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
+                    st.info("💡 इथून तुम्ही आतापर्यंतचा सर्व मूळ डेटा डाऊनलोड करू शकता. या फाईलमध्ये **'ऑटो-फिल्टर (▼)'** लावलेला অ্যাক्टिव्ह आहे, ज्यामुळे तुम्ही तारखेनुसार किंवा दाखल्यानुसार माहिती सहज शोधू शकता.")
                     
                     backup_df = df.copy()
                     backup_df = backup_df.sort_values(by='तारीख', ascending=True) 
