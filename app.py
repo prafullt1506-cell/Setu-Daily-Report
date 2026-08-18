@@ -110,7 +110,7 @@ if not st.session_state["logged_in"]:
                 st.session_state["current_user"] = login_username
                 st.rerun()
             else:
-                st.error("❌ चुकीचा युझरनेम किंवा पासवर्ड! प्रवेश नाकारला.")
+                st.error("❌ चुकीचा युझरनेमसर्गिक किंवा पासवर्ड! प्रवेश नाकारला.")
 else:
     # ==========================================
     # ४. मुख्य हिशोब ॲप
@@ -130,12 +130,11 @@ else:
     sh = connect_to_gsheet()
     hishob_ws = init_db(sh)
 
-    # 🔥 बदल: 'उत्पन्नाचा' ते 'संजय गांधी' पर्यंत सर्व महसूल दाखल्यांचा दर 80 वरून 69 केला आहे.
+    # 🔥 बदल: रेशन कार्डचे दर यादीतून काढले आहेत, जेणेकरून ते रिपोर्टमध्ये येणार नाहीत.
     rates = {
         "उत्पन्नाचा": 69, "वय/अधिवास": 69, "अल्पभूधारक": 69, "जातीचा": 69, "EWS": 69,
         "वारसा": 69, "नॉन-क्रिमीलेअर": 69, "ज्येष्ठ नागरिक": 69, "डोंगरी": 69, "रहिवासी": 69, "शेतकरी": 69, "संजय गांधी": 69,
         "प्रतिज्ञापत्रे": 80,
-        "रेशन नाव कमी": 69, "रेशन नाव दाखल": 69,
         "स्कॅन पेजेस": 2
     }
 
@@ -178,7 +177,6 @@ else:
 
             fk = st.session_state["form_key"]
             
-            # 🔥 बदल: इथे हेडिंगमध्ये सुद्धा (दर: ₹८०) च्या जागी (दर: ₹६९) केले आहे.
             with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹६९)", expanded=True):
                 c1, c2 = st.columns(2)
                 with c1:
@@ -196,26 +194,24 @@ else:
                     v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"), key=f"v11_{fk}")
                     v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"), key=f"v12_{fk}")
                 
-                # 🔥 बदल: एकूण रक्कमेसाठी गुणाकार 80 च्या ऐवजी 69 केला आहे.
                 mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 69
 
             with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
                 v13 = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"), key=f"v13_{fk}")
                 affidavit_rs = v13 * 80
 
-            with st.expander("📁 ३. रेशन कार्ड कामे [दर: ₹६९]"):
-                v14 = st.number_input("नाव कमी करणे", min_value=0, step=1, value=get_val("रेशन नाव कमी"), key=f"v14_{fk}")
-                v15 = st.number_input("नाव दाखल करणे", min_value=0, step=1, value=get_val("रेशन नाव दाखल"), key=f"v15_{fk}")
-                ration_rs = (v14 + v15) * 69
+            # 🔥 रेशन कार्डचा ब्लॉक UI मधून काढला आहे, पण शीटमध्ये कॉलम्सची जागा चुकू नये म्हणून व्हॅल्यू बॅकग्राउंडमध्ये ठेवल्या आहेत.
+            v14 = get_val("रेशन नाव कमी")
+            v15 = get_val("रेशन नाव दाखल")
 
-            with st.expander("📁 ४. स्कॅनिंग [दर: ₹२ / पेज]"):
+            with st.expander("📁 ३. स्कॅनिंग [दर: ₹२ / पेज]"):
                 v16 = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1, value=get_val("स्कॅन पेजेस"), key=f"v16_{fk}")
                 scan_rs = v16 * 2
 
-            with st.expander("📁 ५. इतर किरकोळ कमाई"):
+            with st.expander("📁 ४. इतर किरकोळ कमाई"):
                 v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"), key=f"v17_{fk}")
 
-            grand_total = mahsul_rs + affidavit_rs + ration_rs + scan_rs + v17
+            grand_total = mahsul_rs + affidavit_rs + scan_rs + v17
             
             date_label_text = "आजची" if date_str == str(datetime.date.today()) else f"{datetime.datetime.strptime(date_str, '%Y-%m-%d').strftime('%d-%m-%Y')} ची"
 
@@ -305,7 +301,8 @@ else:
                 
                 if report_type == "फक्त दाखल्यांची संख्या":
                     cols_to_check = list(rates.keys())
-                    cols_to_check.remove("स्कॅन पेजेस") 
+                    if "स्कॅन पेजेस" in cols_to_check:
+                        cols_to_check.remove("स्कॅन पेजेस") 
                     for col in cols_to_check:
                         if col in filtered_df.columns:
                             count = filtered_df[col].sum()
