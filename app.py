@@ -9,7 +9,8 @@ import altair as alt
 # ==========================================
 # १. ॲपची सेटिंग आणि ॲडव्हान्स डिझाईन (Premium UI)
 # ==========================================
-st.set_page_config(page_title="स्मार्ट सेतू हिशोब", page_icon="🏛️", layout="centered")
+# लॅपटॉपवर मोठे आणि छान दिसण्यासाठी 'wide' केले आहे
+st.set_page_config(page_title="स्मार्ट सेतू हिशोब", page_icon="🏛️", layout="wide")
 
 st.markdown("""
     <style>
@@ -127,7 +128,8 @@ else:
     }
 
     with tab1:
-        col_t1_space1, col_t1_main, col_t1_space2 = st.columns([1, 3, 1])
+        # फॉर्मची साईझ लॅपटॉपवर अगदी योग्य दिसावी म्हणून [1, 4, 1] असे मार्जिन दिले आहे
+        col_t1_space1, col_t1_main, col_t1_space2 = st.columns([1, 4, 1])
         with col_t1_main:
             date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
             date_str = str(date_today)
@@ -257,8 +259,9 @@ else:
         if not df.empty:
             df['तारीख'] = pd.to_datetime(df['तारीख'])
             
+            # 🔥 बदल: "सर्व डेटा" आता लिस्टमध्ये १ नंबरला आहे, म्हणजे बाय-डिफॉल्ट तोच सिलेक्ट राहील.
             filter_type = st.selectbox("📅 रिपोर्टचा कालावधी निवडा:", 
-                                       ["विशिष्ट तारीख", "दोन तारखांच्या दरम्यान", "विशिष्ट महिना", "विशिष्ट वर्ष", "सर्व डेटा"])
+                                       ["सर्व डेटा", "विशिष्ट तारीख", "दोन तारखांच्या दरम्यान", "विशिष्ट महिना", "विशिष्ट वर्ष"])
             
             filtered_df = df.copy()
             col_f1, col_f2 = st.columns(2)
@@ -365,16 +368,20 @@ else:
                         if chart_data:
                             clean_chart_df = pd.DataFrame(chart_data)
                             
-                            st.markdown("**🍩 दाखल्यांची विभागणी (संख्या)**")
+                            st.markdown("**🍩 दाखल्यांची विभागणी (नग / Count)**")
+                            
+                            # 🔥 बदल: '4D' सारखा उठावदार (Pop-out) इफेक्ट आणण्यासाठी cornerRadius आणि padAngle चा वापर
                             pie_chart = alt.Chart(clean_chart_df).mark_arc(
                                 innerRadius=50,         
+                                cornerRadius=8,      # 4D Blocky Rounded Edges
+                                padAngle=0.04,       # दोन तुकड्यांमध्ये मोकळी जागा
                                 stroke="#ffffff",       
-                                strokeWidth=1.5
+                                strokeWidth=2
                             ).encode(
                                 theta=alt.Theta(field="एकूण संख्या", type="quantitative"),
-                                color=alt.Color('तपशील (काम):N', scale=alt.Scale(scheme='tableau20'), legend=alt.Legend(title="कामाचा प्रकार", orient="right")),
+                                color=alt.Color('तपशील (काम):N', scale=alt.Scale(scheme='tableau20'), legend=alt.Legend(title="कामाचा प्रकार", orient="right", labelFontSize=13)),
                                 tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण संख्या", title="संख्या")]
-                            ).properties(height=350)
+                            ).properties(height=450)
                             
                             st.altair_chart(pie_chart, use_container_width=True)
 
