@@ -35,7 +35,6 @@ st.markdown("""
     .logo-container:hover { transform: scale(1.02); }
     .logo-icon { font-size: 40px; margin-right: 15px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15)); }
     
-    /* 🔥 फिक्स १: नाव कट होऊ नये म्हणून line-height आणि padding वाढवले */
     .logo-text {
         font-size: 38px; font-weight: 800; margin: 0; 
         line-height: 1.5; padding-top: 5px; padding-bottom: 5px;
@@ -48,9 +47,15 @@ st.markdown("""
     
     .sub-title { text-align: center; font-size: 16px; color: #64748b; margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; }
     
-    /* 🔥 फिक्स २: फॉर्म बॉक्सेस आणि इनपुट फील्ड्स स्पष्ट दिसण्यासाठी */
-    div[data-baseweb="input"], div[data-baseweb="select"] {
+    /* 🔥 फिक्स: लॉगिन आणि फॉर्मचे सर्व बॉक्सेस पांढरे आणि स्पष्ट दिसण्यासाठी */
+    div[data-baseweb="input"] > div, 
+    div[data-baseweb="select"] > div,
+    input {
         background-color: #ffffff !important;
+        border-radius: 6px !important;
+    }
+    div[data-baseweb="input"], div[data-baseweb="select"] {
+        background-color: transparent !important;
         border: 1px solid #94a3b8 !important;
         border-radius: 6px !important;
     }
@@ -168,6 +173,7 @@ logo_html = '''
 if not st.session_state["logged_in"]:
     col_l1, col_login, col_l3 = st.columns([1, 2, 1])
     with col_login:
+        st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown(logo_html, unsafe_allow_html=True)
         st.markdown('<div class="sub-title">🔐 सुरक्षित लॉगिन (Secure Login)</div>', unsafe_allow_html=True)
         AUTHORIZED_USERS = {"setuknk": "2026"}
