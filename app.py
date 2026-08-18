@@ -46,6 +46,17 @@ st.markdown("""
         background-color: #f8fafc;
         margin-top: 10px;
     }
+    
+    /* 🔥 नवीन: डॅशबोर्ड KPI कार्ड्स डिझाईन */
+    .kpi-container { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 20px; }
+    .kpi-card { 
+        flex: 1; background: white; border-radius: 12px; padding: 20px; text-align: center; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-bottom: 4px solid #1e3a8a; 
+    }
+    .kpi-card.green { border-bottom-color: #059669; }
+    .kpi-card.orange { border-bottom-color: #ea580c; }
+    .kpi-title { font-size: 15px; color: #64748b; font-weight: 600; margin-bottom: 8px; }
+    .kpi-value { font-size: 28px; color: #0f172a; font-weight: 800; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -110,27 +121,28 @@ if not st.session_state["logged_in"]:
                 st.session_state["current_user"] = login_username
                 st.rerun()
             else:
-                st.error("❌ चुकीचा युझरनेमसर्गिक किंवा पासवर्ड! प्रवेश नाकारला.")
+                st.error("❌ चुकीचा युझरनेम किंवा पासवर्ड! प्रवेश नाकारला.")
 else:
     # ==========================================
     # ४. मुख्य हिशोब ॲप
     # ==========================================
-    st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="sub-title">👋 स्वागत आहे! ({st.session_state["current_user"]})</div>', unsafe_allow_html=True)
-    
-    col_x1, col_x2 = st.columns([6, 1])
-    with col_x2:
+    # 🔥 नवीन: साईडबार (Sidebar) मध्ये युझर प्रोफाईल आणि लॉगआउट टाकले आहे.
+    with st.sidebar:
+        st.markdown(f"### 👋 स्वागत आहे! <br> **({st.session_state['current_user']})**", unsafe_allow_html=True)
+        st.markdown("---")
         if st.button("🚪 लॉग आउट", use_container_width=True):
             st.session_state["logged_in"] = False
             st.session_state["current_user"] = ""
             st.rerun()
+
+    st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
     tab1, tab2 = st.tabs(["📝 आजचा हिशोब भरा", "📊 अहवाल आणि रिपोर्ट"])
     
     sh = connect_to_gsheet()
     hishob_ws = init_db(sh)
 
-    # 🔥 बदल: रेशन कार्डचे दर यादीतून काढले आहेत, जेणेकरून ते रिपोर्टमध्ये येणार नाहीत.
     rates = {
         "उत्पन्नाचा": 69, "वय/अधिवास": 69, "अल्पभूधारक": 69, "जातीचा": 69, "EWS": 69,
         "वारसा": 69, "नॉन-क्रिमीलेअर": 69, "ज्येष्ठ नागरिक": 69, "डोंगरी": 69, "रहिवासी": 69, "शेतकरी": 69, "संजय गांधी": 69,
@@ -177,39 +189,39 @@ else:
 
             fk = st.session_state["form_key"]
             
+            # 🔥 नवीन: प्रत्येक दाखल्यासमोर आकर्षक इमोजी (Icons) लावले आहेत!
             with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹६९)", expanded=True):
                 c1, c2 = st.columns(2)
                 with c1:
-                    v1 = st.number_input("उत्पन्नाचा दाखला", min_value=0, step=1, value=get_val("उत्पन्नाचा"), key=f"v1_{fk}")
-                    v2 = st.number_input("वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1, value=get_val("वय/अधिवास"), key=f"v2_{fk}")
-                    v3 = st.number_input("अल्पभूधारक / भूमिहीन", min_value=0, step=1, value=get_val("अल्पभूधारक"), key=f"v3_{fk}")
-                    v4 = st.number_input("जातीचा दाखला", min_value=0, step=1, value=get_val("जातीचा"), key=f"v4_{fk}")
-                    v5 = st.number_input("EWS प्रमाणपत्र", min_value=0, step=1, value=get_val("EWS"), key=f"v5_{fk}")
-                    v6 = st.number_input("वारसा दाखला", min_value=0, step=1, value=get_val("वारसा"), key=f"v6_{fk}")
+                    v1 = st.number_input("🎓 उत्पन्नाचा दाखला", min_value=0, step=1, value=get_val("उत्पन्नाचा"), key=f"v1_{fk}")
+                    v2 = st.number_input("🏠 वय, राष्ट्रीयत्व, अधिवास", min_value=0, step=1, value=get_val("वय/अधिवास"), key=f"v2_{fk}")
+                    v3 = st.number_input("🌾 अल्पभूधारक / भूमिहीन", min_value=0, step=1, value=get_val("अल्पभूधारक"), key=f"v3_{fk}")
+                    v4 = st.number_input("📜 जातीचा दाखला", min_value=0, step=1, value=get_val("जातीचा"), key=f"v4_{fk}")
+                    v5 = st.number_input("🏛️ EWS प्रमाणपत्र", min_value=0, step=1, value=get_val("EWS"), key=f"v5_{fk}")
+                    v6 = st.number_input("👨‍👩‍👧‍👦 वारसा दाखला", min_value=0, step=1, value=get_val("वारसा"), key=f"v6_{fk}")
                 with c2:
-                    v7 = st.number_input("नॉन-क्रिमीलेअर", min_value=0, step=1, value=get_val("नॉन-क्रिमीलेअर"), key=f"v7_{fk}")
-                    v8 = st.number_input("ज्येष्ठ नागरिक प्रमाणपत्र", min_value=0, step=1, value=get_val("ज्येष्ठ नागरिक"), key=f"v8_{fk}")
-                    v9 = st.number_input("डोंगरी दाखला", min_value=0, step=1, value=get_val("डोंगरी"), key=f"v9_{fk}")
-                    v10 = st.number_input("रहिवासी दाखला", min_value=0, step=1, value=get_val("रहिवासी"), key=f"v10_{fk}")
-                    v11 = st.number_input("शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"), key=f"v11_{fk}")
-                    v12 = st.number_input("संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"), key=f"v12_{fk}")
+                    v7 = st.number_input("🚫 नॉन-क्रिमीलेअर", min_value=0, step=1, value=get_val("नॉन-क्रिमीलेअर"), key=f"v7_{fk}")
+                    v8 = st.number_input("👴 ज्येष्ठ नागरिक", min_value=0, step=1, value=get_val("ज्येष्ठ नागरिक"), key=f"v8_{fk}")
+                    v9 = st.number_input("⛰️ डोंगरी दाखला", min_value=0, step=1, value=get_val("डोंगरी"), key=f"v9_{fk}")
+                    v10 = st.number_input("🏡 रहिवासी दाखला", min_value=0, step=1, value=get_val("रहिवासी"), key=f"v10_{fk}")
+                    v11 = st.number_input("🚜 शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"), key=f"v11_{fk}")
+                    v12 = st.number_input("👵 संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"), key=f"v12_{fk}")
                 
                 mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 69
 
             with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
-                v13 = st.number_input("एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"), key=f"v13_{fk}")
+                v13 = st.number_input("⚖️ एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"), key=f"v13_{fk}")
                 affidavit_rs = v13 * 80
 
-            # 🔥 रेशन कार्डचा ब्लॉक UI मधून काढला आहे, पण शीटमध्ये कॉलम्सची जागा चुकू नये म्हणून व्हॅल्यू बॅकग्राउंडमध्ये ठेवल्या आहेत.
             v14 = get_val("रेशन नाव कमी")
             v15 = get_val("रेशन नाव दाखल")
 
             with st.expander("📁 ३. स्कॅनिंग [दर: ₹२ / पेज]"):
-                v16 = st.number_input("एकूण स्कॅन केलेली पेजेस", min_value=0, step=1, value=get_val("स्कॅन पेजेस"), key=f"v16_{fk}")
+                v16 = st.number_input("🖨️ एकूण स्कॅन केलेली पेजेस", min_value=0, step=1, value=get_val("स्कॅन पेजेस"), key=f"v16_{fk}")
                 scan_rs = v16 * 2
 
             with st.expander("📁 ४. इतर किरकोळ कमाई"):
-                v17 = st.number_input("थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"), key=f"v17_{fk}")
+                v17 = st.number_input("💵 थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"), key=f"v17_{fk}")
 
             grand_total = mahsul_rs + affidavit_rs + scan_rs + v17
             
@@ -296,9 +308,49 @@ else:
             report_type = st.radio("📊 रिपोर्टचा प्रकार:", ["संपूर्ण हिशोब (डिटेल)", "फक्त दाखल्यांची संख्या"], horizontal=True)
 
             if not filtered_df.empty:
+                # 🔥 नवीन: स्मार्ट KPI कार्ड्सची गणना
+                total_income_val = 0
+                total_certs_val = 0
+                top_cert_name = "काहीही नाही"
+                top_cert_count = 0
+                
                 report_list = []
                 grand_total_calc = 0
                 
+                # KPI साठी सर्व दाखल्यांची संख्या मोजणे (स्कॅन पेजेस सोडून)
+                cert_counts = {}
+                for col in rates.keys():
+                    if col != "स्कॅन पेजेस" and col in filtered_df.columns:
+                        c_sum = filtered_df[col].sum()
+                        if c_sum > 0:
+                            cert_counts[col] = c_sum
+                            total_certs_val += c_sum
+                
+                if cert_counts:
+                    top_cert_name = max(cert_counts, key=cert_counts.get)
+                    top_cert_count = cert_counts[top_cert_name]
+                
+                if "एकूण रक्कम" in filtered_df.columns:
+                    total_income_val = filtered_df["एकूण रक्कम"].sum()
+
+                # 🔥 स्मार्ट KPI कार्ड्स दाखवणे
+                st.markdown(f'''
+                <div class="kpi-container">
+                    <div class="kpi-card green">
+                        <div class="kpi-title">💰 एकूण कमाई</div>
+                        <div class="kpi-value">₹ {int(total_income_val):,}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">📄 एकूण दाखले (नग)</div>
+                        <div class="kpi-value">{int(total_certs_val)}</div>
+                    </div>
+                    <div class="kpi-card orange">
+                        <div class="kpi-title">🔥 टॉप दाखला</div>
+                        <div class="kpi-value">{top_cert_name} <span style="font-size:16px;">({int(top_cert_count)})</span></div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+
                 if report_type == "फक्त दाखल्यांची संख्या":
                     cols_to_check = list(rates.keys())
                     if "स्कॅन पेजेस" in cols_to_check:
