@@ -9,7 +9,6 @@ import altair as alt
 # ==========================================
 # १. ॲपची सेटिंग आणि ॲडव्हान्स डिझाईन (Premium UI)
 # ==========================================
-# लॅपटॉपवर मोठे आणि छान दिसण्यासाठी 'wide' केले आहे
 st.set_page_config(page_title="स्मार्ट सेतू हिशोब", page_icon="🏛️", layout="wide")
 
 st.markdown("""
@@ -35,6 +34,18 @@ st.markdown("""
     .report-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155; font-size: 15px; font-weight: 600;}
     .report-table tr:last-child td { border-bottom: none; }
     .report-total-row { background-color: #f1f5f9; font-weight: 800 !important; color: #0f172a !important; font-size: 18px !important; }
+    
+    /* पाय चार्टसाठी आडवा व उभा स्लायडर येण्यासाठी स्वतंत्र बॉक्स */
+    .pie-scroll-box {
+        overflow: auto;
+        max-height: 550px;
+        white-space: nowrap;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 15px;
+        background-color: #f8fafc;
+        margin-top: 10px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -128,7 +139,6 @@ else:
     }
 
     with tab1:
-        # फॉर्मची साईझ लॅपटॉपवर अगदी योग्य दिसावी म्हणून [1, 4, 1] असे मार्जिन दिले आहे
         col_t1_space1, col_t1_main, col_t1_space2 = st.columns([1, 4, 1])
         with col_t1_main:
             date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
@@ -259,7 +269,6 @@ else:
         if not df.empty:
             df['तारीख'] = pd.to_datetime(df['तारीख'])
             
-            # 🔥 बदल: "सर्व डेटा" आता लिस्टमध्ये १ नंबरला आहे, म्हणजे बाय-डिफॉल्ट तोच सिलेक्ट राहील.
             filter_type = st.selectbox("📅 रिपोर्टचा कालावधी निवडा:", 
                                        ["सर्व डेटा", "विशिष्ट तारीख", "दोन तारखांच्या दरम्यान", "विशिष्ट महिना", "विशिष्ट वर्ष"])
             
@@ -356,7 +365,13 @@ else:
                         st.markdown("### 📊 कामाचा आलेख")
                         
                         chart_data = []
-                        for col in rates.keys(): 
+                        
+                        # 🔥 बदल: 'स्कॅन पेजेस' आणि 'इतर कमाई' वगळून फक्त 'दाखल्यांची नावे' घेतली आहेत
+                        chart_cols = list(rates.keys())
+                        if "स्कॅन पेजेस" in chart_cols:
+                            chart_cols.remove("स्कॅन पेजेस")
+                            
+                        for col in chart_cols: 
                             if col in filtered_df.columns:
                                 count = filtered_df[col].sum()
                                 if count > 0:
@@ -370,20 +385,22 @@ else:
                             
                             st.markdown("**🍩 दाखल्यांची विभागणी (नग / Count)**")
                             
-                            # 🔥 बदल: '4D' सारखा उठावदार (Pop-out) इफेक्ट आणण्यासाठी cornerRadius आणि padAngle चा वापर
+                            st.markdown('<div class="pie-scroll-box">', unsafe_allow_html=True)
+                            
                             pie_chart = alt.Chart(clean_chart_df).mark_arc(
                                 innerRadius=50,         
-                                cornerRadius=8,      # 4D Blocky Rounded Edges
-                                padAngle=0.04,       # दोन तुकड्यांमध्ये मोकळी जागा
+                                cornerRadius=8,      
+                                padAngle=0.04,       
                                 stroke="#ffffff",       
                                 strokeWidth=2
                             ).encode(
                                 theta=alt.Theta(field="एकूण संख्या", type="quantitative"),
                                 color=alt.Color('तपशील (काम):N', scale=alt.Scale(scheme='tableau20'), legend=alt.Legend(title="कामाचा प्रकार", orient="right", labelFontSize=13)),
                                 tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण संख्या", title="संख्या")]
-                            ).properties(height=450)
+                            ).properties(height=450, width=600)
                             
-                            st.altair_chart(pie_chart, use_container_width=True)
+                            st.altair_chart(pie_chart, use_container_width=False)
+                            st.markdown('</div>', unsafe_allow_html=True)
 
                     st.markdown("---")
 
