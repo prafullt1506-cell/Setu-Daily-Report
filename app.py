@@ -35,7 +35,6 @@ st.markdown("""
     .report-table tr:last-child td { border-bottom: none; }
     .report-total-row { background-color: #f1f5f9; font-weight: 800 !important; color: #0f172a !important; font-size: 18px !important; }
     
-    /* पाय चार्टसाठी आडवा व उभा स्लायडर येण्यासाठी स्वतंत्र बॉक्स */
     .pie-scroll-box {
         overflow: auto;
         max-height: 550px;
@@ -47,16 +46,18 @@ st.markdown("""
         margin-top: 10px;
     }
     
-    /* 🔥 नवीन: डॅशबोर्ड KPI कार्ड्स डिझाईन */
-    .kpi-container { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 20px; }
-    .kpi-card { 
-        flex: 1; background: white; border-radius: 12px; padding: 20px; text-align: center; 
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-bottom: 4px solid #1e3a8a; 
+    /* 🔥 नवीन: लाईव्ह स्मार्ट पावतीची डिझाईन */
+    .receipt-box {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        border-top: 6px solid #1e3a8a;
+        margin-bottom: 20px;
     }
-    .kpi-card.green { border-bottom-color: #059669; }
-    .kpi-card.orange { border-bottom-color: #ea580c; }
-    .kpi-title { font-size: 15px; color: #64748b; font-weight: 600; margin-bottom: 8px; }
-    .kpi-value { font-size: 28px; color: #0f172a; font-weight: 800; }
+    .receipt-title { font-size: 20px; font-weight: 800; color: #1e3a8a; text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 10px; margin-bottom: 15px; }
+    .receipt-item { display: flex; justify-content: space-between; font-size: 15px; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; color: #334155; font-weight: 600; }
+    .receipt-total { display: flex; justify-content: space-between; font-size: 22px; font-weight: 800; padding-top: 15px; margin-top: 10px; border-top: 2px solid #cbd5e1; color: #059669; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -126,17 +127,15 @@ else:
     # ==========================================
     # ४. मुख्य हिशोब ॲप
     # ==========================================
-    # 🔥 नवीन: साईडबार (Sidebar) मध्ये युझर प्रोफाईल आणि लॉगआउट टाकले आहे.
-    with st.sidebar:
-        st.markdown(f"### 👋 स्वागत आहे! <br> **({st.session_state['current_user']})**", unsafe_allow_html=True)
-        st.markdown("---")
+    st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="sub-title">👋 स्वागत आहे! ({st.session_state["current_user"]})</div>', unsafe_allow_html=True)
+    
+    col_x1, col_x2 = st.columns([6, 1])
+    with col_x2:
         if st.button("🚪 लॉग आउट", use_container_width=True):
             st.session_state["logged_in"] = False
             st.session_state["current_user"] = ""
             st.rerun()
-
-    st.markdown('<div class="main-title">🏛️ स्मार्ट सेतू हिशोब</div>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
 
     tab1, tab2 = st.tabs(["📝 आजचा हिशोब भरा", "📊 अहवाल आणि रिपोर्ट"])
     
@@ -151,8 +150,10 @@ else:
     }
 
     with tab1:
-        col_t1_space1, col_t1_main, col_t1_space2 = st.columns([1, 4, 1])
-        with col_t1_main:
+        # 🔥 बदल: डावीकडे फॉर्म (फॉर्मची जागा मोठी) आणि उजवीकडे पावती (Receipt)
+        col_form, col_receipt = st.columns([1.8, 1], gap="large")
+        
+        with col_form:
             date_today = st.date_input("📅 तारीख निवडा:", datetime.date.today())
             date_str = str(date_today)
             
@@ -172,10 +173,10 @@ else:
                     break
             
             if existing_row:
-                st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे. तुम्ही तो खाली बदलू (Edit) शकता.")
-                btn_label = "💾 हिशोब अपडेट करा (Update)"
+                st.info(f"💡 {date_str} या तारखेचा हिशोब आधीच सेव्ह आहे.")
+                btn_label = "💾 हिशोब अपडेट करा"
             else:
-                btn_label = "💾 हिशोब गुगल शीटमध्ये सेव्ह करा"
+                btn_label = "💾 हिशोब सेव्ह करा"
 
             def get_val(col_name):
                 if st.session_state["force_clear"]:
@@ -189,7 +190,6 @@ else:
 
             fk = st.session_state["form_key"]
             
-            # 🔥 नवीन: प्रत्येक दाखल्यासमोर आकर्षक इमोजी (Icons) लावले आहेत!
             with st.expander("📁 १. सर्व महसूल व इतर दाखले (दर: ₹६९)", expanded=True):
                 c1, c2 = st.columns(2)
                 with c1:
@@ -206,39 +206,73 @@ else:
                     v10 = st.number_input("🏡 रहिवासी दाखला", min_value=0, step=1, value=get_val("रहिवासी"), key=f"v10_{fk}")
                     v11 = st.number_input("🚜 शेतकरी दाखला", min_value=0, step=1, value=get_val("शेतकरी"), key=f"v11_{fk}")
                     v12 = st.number_input("👵 संजय गांधी पेन्शन", min_value=0, step=1, value=get_val("संजय गांधी"), key=f"v12_{fk}")
-                
-                mahsul_rs = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 69
 
             with st.expander("📁 २. प्रतिज्ञापत्र (Affidavit) [दर: ₹८०]"):
                 v13 = st.number_input("⚖️ एकूण प्रतिज्ञापत्रे", min_value=0, step=1, value=get_val("प्रतिज्ञापत्रे"), key=f"v13_{fk}")
-                affidavit_rs = v13 * 80
 
             v14 = get_val("रेशन नाव कमी")
             v15 = get_val("रेशन नाव दाखल")
 
             with st.expander("📁 ३. स्कॅनिंग [दर: ₹२ / पेज]"):
                 v16 = st.number_input("🖨️ एकूण स्कॅन केलेली पेजेस", min_value=0, step=1, value=get_val("स्कॅन पेजेस"), key=f"v16_{fk}")
-                scan_rs = v16 * 2
 
             with st.expander("📁 ४. इतर किरकोळ कमाई"):
                 v17 = st.number_input("💵 थेट एकूण रक्कम टाका (₹)", min_value=0, step=1, value=get_val("इतर कमाई"), key=f"v17_{fk}")
 
-            grand_total = mahsul_rs + affidavit_rs + scan_rs + v17
+            grand_total = ((v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12) * 69) + (v13 * 80) + (v16 * 2) + v17
+
+        # 🔥 नवीन: उजवीकडे 'लाईव्ह स्मार्ट पावती' (Live Receipt)
+        with col_receipt:
+            st.markdown("<br>", unsafe_allow_html=True) # वरून थोडी जागा
             
-            date_label_text = "आजची" if date_str == str(datetime.date.today()) else f"{datetime.datetime.strptime(date_str, '%Y-%m-%d').strftime('%d-%m-%Y')} ची"
+            # पावती बनवणे
+            receipt_items = []
+            if v1 > 0: receipt_items.append(("उत्पन्नाचा दाखला", v1, v1 * 69))
+            if v2 > 0: receipt_items.append(("वय/अधिवास", v2, v2 * 69))
+            if v3 > 0: receipt_items.append(("अल्पभूधारक", v3, v3 * 69))
+            if v4 > 0: receipt_items.append(("जातीचा दाखला", v4, v4 * 69))
+            if v5 > 0: receipt_items.append(("EWS प्रमाणपत्र", v5, v5 * 69))
+            if v6 > 0: receipt_items.append(("वारसा दाखला", v6, v6 * 69))
+            if v7 > 0: receipt_items.append(("नॉन-क्रिमीलेअर", v7, v7 * 69))
+            if v8 > 0: receipt_items.append(("ज्येष्ठ नागरिक", v8, v8 * 69))
+            if v9 > 0: receipt_items.append(("डोंगरी दाखला", v9, v9 * 69))
+            if v10 > 0: receipt_items.append(("रहिवासी दाखला", v10, v10 * 69))
+            if v11 > 0: receipt_items.append(("शेतकरी दाखला", v11, v11 * 69))
+            if v12 > 0: receipt_items.append(("संजय गांधी", v12, v12 * 69))
+            if v13 > 0: receipt_items.append(("प्रतिज्ञापत्रे", v13, v13 * 80))
+            if v16 > 0: receipt_items.append(("स्कॅनिंग (पेजेस)", v16, v16 * 2))
+            if v17 > 0: receipt_items.append(("इतर कमाई", "-", v17))
 
-            st.markdown(f'''
-            <div class="grand-total-card">
-                <div class="grand-total-label">💰 {date_label_text} एकूण कमाई</div>
-                <div class="grand-total-text">₹ {grand_total}</div>
+            # HTML पावती डिझाईन
+            receipt_html = f'''
+            <div class="receipt-box">
+                <div class="receipt-title">🧾 आजचा हिशोब (पावती)</div>
+            '''
+            
+            if not receipt_items:
+                receipt_html += "<div style='text-align:center; color:#94a3b8; font-size:14px; padding:20px 0;'>अजून कोणताही दाखला भरलेला नाही...</div>"
+            else:
+                for item_name, count, amt in receipt_items:
+                    count_str = f"x {count}" if count != "-" else ""
+                    receipt_html += f'''
+                    <div class="receipt-item">
+                        <span>{item_name} <span style="color:#94a3b8; font-size:13px; margin-left:5px;">{count_str}</span></span>
+                        <span>₹ {amt}</span>
+                    </div>
+                    '''
+            
+            receipt_html += f'''
+                <div class="receipt-total">
+                    <span>एकूण रक्कम</span>
+                    <span>₹ {grand_total}</span>
+                </div>
             </div>
-            ''', unsafe_allow_html=True)
+            '''
+            st.markdown(receipt_html, unsafe_allow_html=True)
 
-            col_btn1, col_btn2 = st.columns(2)
-            with col_btn1:
-                save_clicked = st.button(btn_label, use_container_width=True, type="primary")
-            with col_btn2:
-                clear_clicked = st.button("🧹 सर्व आकडे पुसा (Clear)", use_container_width=True)
+            # सेव्ह आणि क्लिअर बटणे पावतीच्या खाली!
+            save_clicked = st.button(btn_label, use_container_width=True, type="primary")
+            clear_clicked = st.button("🧹 सर्व आकडे पुसा (Clear)", use_container_width=True)
 
             if clear_clicked:
                 st.session_state["force_clear"] = True
@@ -257,16 +291,16 @@ else:
                             hishob_ws.update(f"A{row_index}:T{row_index}", [row_data])
                         except:
                             hishob_ws.update(values=[row_data], range_name=f"A{row_index}:T{row_index}")
-                        st.success("✅ रेकॉर्ड यशस्वीरित्या अपडेट झाला!")
+                        st.toast('✅ रेकॉर्ड यशस्वीरित्या अपडेट झाला!', icon='🎉')
                     else:
                         hishob_ws.append_row(row_data)
-                        st.balloons()
-                        st.success("✅ रेकॉर्ड गुगल शीटमध्ये यशस्वीरित्या सेव्ह झाला!")
+                        st.balloons() # 🎈 फुगे येतील!
+                        st.toast('✅ रेकॉर्ड गुगल शीटमध्ये सेव्ह झाला!', icon='🎉')
                     
                     fetch_all_records.clear()
                     st.session_state["force_clear"] = False
                     st.session_state["form_key"] += 1
-                    st.rerun()
+                    # st.rerun() # Toast दिसावा म्हणून rerun थोडा वेळ थांबवू शकतो, पण लगेच केला तरी चालतो.
                     
                 except Exception as e:
                     st.error(f"⚠️ सेव्ह करताना अडचण आली: {e}")
@@ -308,49 +342,9 @@ else:
             report_type = st.radio("📊 रिपोर्टचा प्रकार:", ["संपूर्ण हिशोब (डिटेल)", "फक्त दाखल्यांची संख्या"], horizontal=True)
 
             if not filtered_df.empty:
-                # 🔥 नवीन: स्मार्ट KPI कार्ड्सची गणना
-                total_income_val = 0
-                total_certs_val = 0
-                top_cert_name = "काहीही नाही"
-                top_cert_count = 0
-                
                 report_list = []
                 grand_total_calc = 0
                 
-                # KPI साठी सर्व दाखल्यांची संख्या मोजणे (स्कॅन पेजेस सोडून)
-                cert_counts = {}
-                for col in rates.keys():
-                    if col != "स्कॅन पेजेस" and col in filtered_df.columns:
-                        c_sum = filtered_df[col].sum()
-                        if c_sum > 0:
-                            cert_counts[col] = c_sum
-                            total_certs_val += c_sum
-                
-                if cert_counts:
-                    top_cert_name = max(cert_counts, key=cert_counts.get)
-                    top_cert_count = cert_counts[top_cert_name]
-                
-                if "एकूण रक्कम" in filtered_df.columns:
-                    total_income_val = filtered_df["एकूण रक्कम"].sum()
-
-                # 🔥 स्मार्ट KPI कार्ड्स दाखवणे
-                st.markdown(f'''
-                <div class="kpi-container">
-                    <div class="kpi-card green">
-                        <div class="kpi-title">💰 एकूण कमाई</div>
-                        <div class="kpi-value">₹ {int(total_income_val):,}</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-title">📄 एकूण दाखले (नग)</div>
-                        <div class="kpi-value">{int(total_certs_val)}</div>
-                    </div>
-                    <div class="kpi-card orange">
-                        <div class="kpi-title">🔥 टॉप दाखला</div>
-                        <div class="kpi-value">{top_cert_name} <span style="font-size:16px;">({int(top_cert_count)})</span></div>
-                    </div>
-                </div>
-                ''', unsafe_allow_html=True)
-
                 if report_type == "फक्त दाखल्यांची संख्या":
                     cols_to_check = list(rates.keys())
                     if "स्कॅन पेजेस" in cols_to_check:
