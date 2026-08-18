@@ -34,6 +34,14 @@ st.markdown("""
     .report-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155; font-size: 15px; font-weight: 600;}
     .report-table tr:last-child td { border-bottom: none; }
     .report-total-row { background-color: #f1f5f9; font-weight: 800 !important; color: #0f172a !important; font-size: 18px !important; }
+    
+    /* 🔥 नवीन: ग्राफ खाली आडवा स्लायडर आणण्यासाठी */
+    .scrollable-chart {
+        overflow-x: auto;
+        white-space: nowrap;
+        width: 100%;
+        padding-bottom: 10px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -375,19 +383,27 @@ else:
                         if chart_data:
                             clean_chart_df = pd.DataFrame(chart_data)
                             
-                            # 🔥 फिक्स १: 'दाखल्यांची संख्या' ग्राफ. 'use_container_width=False' आणि मोठी width (800) दिल्यामुळे आता खाली 'आडवा स्लायडर' येईल.
+                            # 🔥 फिक्स १: बार ग्राफ (दाखल्यांची संख्या) - झूम (interactive) आणि स्लायडर सह!
                             st.markdown("**📈 दाखल्यांची संख्या**")
                             bar_df = clean_chart_df[clean_chart_df["एकूण संख्या"] > 0]
-                            bar_chart = alt.Chart(bar_df).mark_bar(size=30, cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+                            
+                            bar_chart = alt.Chart(bar_df).mark_bar(
+                                size=30, 
+                                cornerRadiusTopLeft=4, 
+                                cornerRadiusTopRight=4
+                            ).encode(
                                 x=alt.X('तपशील (काम):N', sort='-y', title="", axis=alt.Axis(labelAngle=-45, labelOverlap=False)),
                                 y=alt.Y('एकूण संख्या:Q', title="संख्या"),
-                                color=alt.Color('तपशील (काम):N', scale=alt.Scale(scheme='tableau20'), legend=None),
+                                color=alt.Color('तपशील (काम):N', scale=alt.Scale(scheme='category20'), legend=None),
                                 tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण संख्या", title="संख्या")]
-                            ).properties(height=300, width=800).interactive() # interactive() ने झूम आणि पॅन पुन्हा चालू होईल
+                            ).properties(height=300, width=max(800, len(bar_df)*50)).interactive()
                             
-                            st.altair_chart(bar_chart, use_container_width=False) # False केल्यामुळे खाली आडवा स्क्रोलबार येईल
+                            # HTML डब्यात टाकल्यामुळे 'आडवा स्लायडर' १००% येणार!
+                            st.markdown('<div class="scrollable-chart">', unsafe_allow_html=True)
+                            st.altair_chart(bar_chart, use_container_width=False)
+                            st.markdown('</div>', unsafe_allow_html=True)
                             
-                            # 🔥 फिक्स २: 'कमाईचा डोनट चार्ट'. लेजंड उजवीकडे (right) घेतल्यामुळे गोल मोठा दिसेल.
+                            # 🔥 फिक्स २: डोनट चार्ट (कमाईची रक्कम) - मोठा साईझ आणि स्पष्ट लेजंड!
                             st.markdown("**🍩 कमाईची विभागणी (₹)**")
                             pie_chart = alt.Chart(clean_chart_df).mark_arc(
                                 innerRadius=50,         
@@ -395,9 +411,9 @@ else:
                                 strokeWidth=1.5
                             ).encode(
                                 theta=alt.Theta(field="एकूण रक्कम (₹)", type="quantitative"),
-                                color=alt.Color(field="तपशील (काम):N", scale=alt.Scale(scheme='tableau20'), legend=alt.Legend(title="कामाचा प्रकार", orient="right")),
+                                color=alt.Color('तपशील (काम):N', scale=alt.Scale(scheme='category20'), legend=alt.Legend(title="कामाचा प्रकार", orient="right", columns=1)),
                                 tooltip=[alt.Tooltip("तपशील (काम)", title="काम"), alt.Tooltip("एकूण रक्कम (₹)", title="रक्कम (₹)")]
-                            ).properties(height=300)
+                            ).properties(height=400, width=400) # इथे width आणि height मोठी केली आहे!
                             
                             st.altair_chart(pie_chart, use_container_width=True)
 
