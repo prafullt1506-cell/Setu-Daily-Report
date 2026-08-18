@@ -16,14 +16,14 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&family=Poppins:wght@400;600;800&display=swap');
     html, body, [class*="css"] { font-family: 'Mukta', 'Poppins', sans-serif; }
     
-    /* 🔥 नवीन: ॲपचा प्रीमियम बॅकग्राउंड (Soft Mesh Gradient) */
+    /* ॲपचा प्रीमियम बॅकग्राउंड (Soft Mesh Gradient) */
     .stApp {
         background: radial-gradient(circle at 10% 20%, rgba(219, 234, 254, 0.5) 0%, transparent 20%),
                     radial-gradient(circle at 90% 80%, rgba(224, 231, 255, 0.5) 0%, transparent 20%),
                     linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     }
 
-    /* 🔥 नवीन: खरा 'लोगो' (Logo Badge with Shine Animation) */
+    /* खरा 'लोगो' (Logo Badge with Shine Animation) */
     .logo-container {
         display: flex; align-items: center; justify-content: center;
         background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);
@@ -34,8 +34,11 @@ st.markdown("""
     }
     .logo-container:hover { transform: scale(1.02); }
     .logo-icon { font-size: 40px; margin-right: 15px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15)); }
+    
+    /* 🔥 फिक्स १: नाव कट होऊ नये म्हणून line-height आणि padding वाढवले */
     .logo-text {
-        font-size: 38px; font-weight: 800; margin: 0; line-height: 1.2;
+        font-size: 38px; font-weight: 800; margin: 0; 
+        line-height: 1.5; padding-top: 5px; padding-bottom: 5px;
         background: linear-gradient(120deg, #1e3a8a, #3b82f6, #1e3a8a);
         background-size: 200% auto;
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -45,6 +48,20 @@ st.markdown("""
     
     .sub-title { text-align: center; font-size: 16px; color: #64748b; margin-bottom: 25px; font-weight: 600; letter-spacing: 0.5px; }
     
+    /* 🔥 फिक्स २: फॉर्म बॉक्सेस आणि इनपुट फील्ड्स स्पष्ट दिसण्यासाठी */
+    div[data-baseweb="input"], div[data-baseweb="select"] {
+        background-color: #ffffff !important;
+        border: 1px solid #94a3b8 !important;
+        border-radius: 6px !important;
+    }
+    
+    [data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.85) !important;
+        border-radius: 12px !important;
+        border: 1px solid #cbd5e1 !important;
+        margin-bottom: 15px !important;
+    }
+
     /* 3D Premium Grand Total Card */
     .grand-total-card { 
         background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%); 
@@ -140,7 +157,7 @@ if "force_clear" not in st.session_state:
 if "last_date" not in st.session_state:
     st.session_state["last_date"] = str(datetime.date.today())
 
-# 🔥 वारंवार वापरला जाणारा लोगो HTML (Login आणि Main App दोन्हीकडे)
+# वारंवार वापरला जाणारा लोगो HTML
 logo_html = '''
 <div class="logo-container">
     <div class="logo-icon">🏛️</div>
